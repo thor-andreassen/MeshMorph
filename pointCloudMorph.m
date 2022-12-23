@@ -11,12 +11,13 @@ function [source_nodes_fit]= pointCloudMorph(target_nodes,source_nodes,params)
     start_target=params.start_target;
     p=params.new_knots_per_iter;
     initial_knots=params.initial_knots;
+    d_min=params.d_min;
     
     %% mesh morphin initialization
     source_nodes_0=source_nodes;
     bb_min=min(source_nodes_0);
     bb_max=max(source_nodes_0);
-    bb_dif=abs(bb_max-bb_min)*.3;
+    bb_dif=abs(bb_max-bb_min)*.25;
     bb_min=bb_min-bb_dif;
     bb_max=bb_max+bb_dif;
 
@@ -65,12 +66,13 @@ function [source_nodes_fit]= pointCloudMorph(target_nodes,source_nodes,params)
             end
             clf(fig_mesh);
             subplot(1,2,1);
-            scatter3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),'go');
+            scatter3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),'go','LineWidth',.25);
             hold on
-            scatter3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo');
-            scatter3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro');
-            scatter3(K(:,1),K(:,2),K(:,3),'kx')
+            scatter3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','LineWidth',.25);
+            scatter3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro','LineWidth',.25);
+            scatter3(K(:,1),K(:,2),K(:,3),'kx','LineWidth',5)
             axis equal
+            view([0 0 1])
             pause(.01);
         end
 
@@ -82,16 +84,49 @@ function [source_nodes_fit]= pointCloudMorph(target_nodes,source_nodes,params)
             temp_dist=[Idx_n,D_n];
             temp_dist=sortrows(temp_dist,2,'descend');
             new_indices=unique(temp_dist(:,1),'stable');
-            new_knot_indices=new_indices(1:p);
-            K=[K;source_nodes(new_knot_indices,:)+rand(p,3)*rand_mult];
+            
+            pot_knots=source_nodes(new_indices,:);
+            count_p=1;
+            count_pot=1;
+            while count_p<p && count_pot<size(pot_knots,1)
+                temp_knots=[K;pot_knots(count_pot,:)];
+                [~,new_potential_knots_D]=...
+                    knnsearch(temp_knots,pot_knots(count_pot,:),'K',2);
+                if new_potential_knots_D(2) >= d_min
+                    K=[K;pot_knots(count_pot,:)];
+                    count_p=count_p+1;
+                end
+                count_pot=count_pot+1;
+            end
+
+            
+%             new_knot_indices=new_indices(1:p);
+%             K=[K;source_nodes(new_knot_indices,:)+rand(p,3)*rand_mult];
 
         else
             [Idx_n,D_n] = knnsearch(target_nodes,source_nodes,'K',1);
             temp_dist=[Idx_n,D_n];
             temp_dist=sortrows(temp_dist,2,'descend');
             new_indices=unique(temp_dist(:,1),'stable');
-            new_knot_indices=new_indices(1:p);
-            K=[K;target_nodes(new_knot_indices,:)+rand(p,3)*rand_mult];
+            
+            pot_knots=target_nodes(new_indices,:);
+            count_p=1;
+            count_pot=1;
+            while count_p<p && count_pot<size(pot_knots,1)
+                temp_knots=[K;pot_knots(count_pot,:)];
+                [~,new_potential_knots_D]=...
+                    knnsearch(temp_knots,pot_knots(count_pot,:),'K',2);
+                if new_potential_knots_D(2) >= d_min
+                    K=[K;pot_knots(count_pot,:)];
+                    count_p=count_p+1;
+                end
+                count_pot=count_pot+1;
+            end
+            
+            
+            
+%             new_knot_indices=new_indices(1:p);
+%             K=[K;target_nodes(new_knot_indices,:)+rand(p,3)*rand_mult];
         end
 
         if include_rand_knots==1

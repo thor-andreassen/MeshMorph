@@ -51,30 +51,32 @@ source.faces_reduce=source_tri_elems;
 %% morph large f
 params.f=1000;
 params.new_knots_per_iter=20;
-params.f_decay=.995;
-params.max_iterations=15;
+params.f_decay=.999;
+params.max_iterations=10;
 params.want_plot=1;
-params.rand_mult=2;
-params.rand_decay=.999;
-params.include_rand_knots=1;
-params.knot_reset_iter=10;
+params.rand_mult=.1;
+params.rand_decay=.5;
+params.include_rand_knots=0;
+params.knot_reset_iter=50;
 params.target_source_switch_iter=2;
-params.start_target=1;
-params.initial_knots=4;
+params.start_target=0;
+params.initial_knots=3;
+params.d_min=5;
 
 [source.nodes_deform]= pointCloudMorph(target.nodes,source.nodes,params);
 
 
 %% morph small f
 params.f=10;
-params.new_knots_per_iter=2;
-params.f_decay=.99;
+params.new_knots_per_iter=20;
+params.f_decay=.999;
 params.target_source_switch_iter=2;
 params.start_target=0;
-params.max_iterations=10;
-params.include_rand_knots=1;
+params.max_iterations=20;
+params.include_rand_knots=0;
 params.rand_mult=0.1;
-params.initial_knots=6;
+params.initial_knots=4;
+params.d_min=1;
 [source.nodes_deform]= pointCloudMorph(target.nodes,source.nodes_deform,params);
 
 
@@ -234,11 +236,35 @@ source_geom_deform=patch('Faces',source_faces_plot,'Vertices',source.nodes_defor
 axis equal
 
 %% deform inner nodes
+b_min=min(target.nodes);
+b_max=max(target.nodes);
+
+[target_tet_node,target_tet_elem,target_tet_face]=surf2mesh(target.nodes,target.faces,b_min,b_max,.5,0.05);
 
 
+%% morph full mesh nodes
+params.f=5;
+params.new_knots_per_iter=20;
+params.f_decay=1;
+params.target_source_switch_iter=2;
+params.start_target=0;
+params.max_iterations=20;
+params.include_rand_knots=0;
+params.rand_mult=0.05;
+params.initial_knots=3;
+params.knot_reset_iter=30;
+params.d_min=0.1;
+[source.nodes_deform_total]= pointCloudMorph(target_tet_node,source.nodes_deform_total,params);
 
+%% plot points
 
+% scatter3(source.nodes_deform(:,1),source.nodes_deform(:,2),source.nodes_deform(:,3));
+figure()
+target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2);
 
+hold on
+source_geom_deform=patch('Faces',source_faces_plot,'Vertices',source.nodes_deform_total,'FaceColor','m');
+axis equal
 
 
 
