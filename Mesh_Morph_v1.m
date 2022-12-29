@@ -3,30 +3,16 @@ clear
 close all
 clc
 
-%% constant parameters
-% f=10000;
-% p=2;
-% f=10;
-% p=2;
 
-
-% f=1000;
-% p=10;
-
-f=10;
-p=2;
-rand_mult=1;
-
-%% Initialize Figures
-fig_mesh=figure();
-fig_error=figure();
 
 %% load target mesh
 stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Laxity FE Model\S192803_FE_Model\Iterative Alignment Check\MeshMorph\mesh_geometries\'];
 % target_geom_path='VHF_Right_Bone_Femur_smooth.stl';
 % source_geom_path='VHM_Right_Bone_Femur_smooth_2.stl';
-% % [target.faces,target.nodes]=stlRead2([stl_path,target_geom_path]);
-% % [source.faces,source.nodes]=stlRead2([stl_path,source_geom_path]);
+% [target.faces,target.nodes]=stlRead2([stl_path,target_geom_path]);
+% [source.faces,source.nodes]=stlRead2([stl_path,source_geom_path]);
+% load('femur_test')
+
 
 
 % target_geom_path='S193761_Cart_Femur_align.inp';
@@ -62,153 +48,73 @@ source.nodes=source_nodes_renumber;
 source.faces=source_tri_elems;
 source.nodes_reduce=source_nodes_renumber;
 source.faces_reduce=source_tri_elems;
-%% plot original bones
-% target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2);
-% hold on
-% source_geom_orig=patch('Faces',source.faces_reduce,'Vertices',source.nodes_reduce,'FaceColor','b','EdgeAlpha',.2);
 
 
-%% mesh morphin initialization
-target_nodes=target.nodes;
-source_nodes_0=source.nodes_reduce;
-source_nodes=source_nodes_0;
-bb_min=min(source.nodes_reduce);
-bb_max=max(source.nodes_reduce);
-bb_dif=abs(bb_max-bb_min)*.3;
-bb_min=bb_min-bb_dif;
-bb_max=bb_max+bb_dif;
+%% morph large f
+close all
+params.f=100000;
+params.new_knots_per_iter=20;
+params.f_decay=.999;
+params.max_iterations=20;
+params.want_plot=1;
+params.rand_mult=.1;
+params.rand_decay=.5;
+params.include_rand_knots=0;
+params.knot_reset_iter=50;
+params.target_source_switch_iter=2;
+params.start_target=0;
+params.initial_knots=3;
+params.d_min=5;
+params.beta=-.1;
+params.scale=.5;
+params.dist_threshold=30;
 
-x_bb=linspace(bb_min(1),bb_max(1),3);
-y_bb=linspace(bb_min(2),bb_max(2),3);
-z_bb=linspace(bb_min(3),bb_max(3),3);
-
-[X,Y,Z]=meshgrid(x_bb,y_bb,z_bb);
-X=reshape(X,[],1);
-Y=reshape(Y,[],1);
-Z=reshape(Z,[],1);
-
-bb_dif=bb_max-bb_min;
-K0=[X,Y,Z];
-
-K=K0;
-% hold on
-% scatter3(K(:,1),K(:,2),K(:,3),'go')
-
-phi_func=@(r,sigma) exp(-(r.^2)/(2*sigma.^2));
+[source.nodes_deform]= pointCloudMorph_v2(target.nodes,source.nodes,params);
 
 
-%% plot original
+%% smooth mesh
+smooth_mesh.vertices=source.nodes_deform;
+smooth_mesh.faces=source.faces;
+FV2=smoothpatch(smooth_mesh,0,2);
+patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
+
+source.nodes_deform=FV2.vertices;
+
+%% morph small f
+% params.f=10000;
+% params.new_knots_per_iter=20;
+% params.f_decay=.999;
+% params.target_source_switch_iter=2;
+% params.start_target=0;
+% params.max_iterations=10;
+% params.include_rand_knots=0;
+% params.rand_mult=0.1;
+% params.initial_knots=4;
+% params.d_min=1;
+% params.dist_threshold=15;
+% 
+% params.beta=-.9;
+% params.scale=.5;
+% [source.nodes_deform]= pointCloudMorph_v2(target.nodes,source.nodes_deform,params);
 
 
 
-%% main loop for mesh morphing
-tic
-counter=1;
-error_hist=[];
-switcher=0;
-while counter<=50
-    
-    % get sigmas
-    [~,D] = knnsearch(K,K,'K',4);
-    sigmas=mean(D(:,2:end),2)*f;
-    
-    
-    % determine nearest points
-    [Idx_T] = knnsearch(source_nodes,target_nodes,'K',1);
-    U=target_nodes;
-    d=source_nodes(Idx_T,:);
-    
-    rbf_mat_test=rbfFuncMat(phi_func,d,K,sigmas);
-    
-    % fit rbf A coefficients
-    A=rbf_mat_test\U;
-    
-    % determine new node locations
-    rbf_mat_full=rbfFuncMat(phi_func,source_nodes,K,sigmas);
-    new_source_nodes=rbf_mat_full*A;
-    
-    figure(fig_mesh)
-    clf(fig_mesh)
-    scatter3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),'go');
-    hold on
-    scatter3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo');
-    scatter3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro');
-    scatter3(K(:,1),K(:,2),K(:,3),'kx')
-    axis equal
-    pause(.01);
-    
-    
-    %determine new knot lcoations
-%     if mod(counter,2)==0
-if switcher==0
-        [Idx_n,D_n] = knnsearch(source_nodes,target_nodes,'K',1);
-        temp_dist=[Idx_n,D_n];
-        temp_dist=sortrows(temp_dist,2,'descend');
-        new_indices=unique(temp_dist(:,1),'stable');
-        new_knot_indices=new_indices(1:p);
-        K=[K;source_nodes(new_knot_indices,:)+rand(p,3)*rand_mult];
-        
-    else
-        [Idx_n,D_n] = knnsearch(target_nodes,source_nodes,'K',1);
-        temp_dist=[Idx_n,D_n];
-        temp_dist=sortrows(temp_dist,2,'descend');
-        new_indices=unique(temp_dist(:,1),'stable');
-        new_knot_indices=new_indices(1:p);
-        K=[K;target_nodes(new_knot_indices,:)+rand(p,3)*rand_mult];
-    end
-    
-%     rand_nodes_x=rand(p,1)*bb_dif(1)+bb_min(1);
-%     rand_nodes_y=rand(p,1)*bb_dif(2)+bb_min(2);
-%     rand_nodes_z=rand(p,1)*bb_dif(3)+bb_min(3);
-%     rand_nodes=[rand_nodes_x,rand_nodes_y,rand_nodes_z];
-%     K=[K;rand_nodes];
-    
-    error=max(D_n)
-    error_hist=[error_hist,error];
-    
-    figure(fig_error);
-    plot(error_hist);
-    
-    source_nodes=new_source_nodes;
-    
-    counter=counter+1;
-    
-    rand_mult=rand_mult*1;
-%     f=.95*f;
-    f=.995*f;
-    if mod(counter,10)==0
-%         current_rand_ind=randperm(size(K,1));
-        K=K0;
-%         K=K(current_rand_ind(1:20),:);
-    end
-    
-%     if mod(counter,2)==0
-        if mod(counter,20)==0
-        if switcher==1
-            switcher=0;
-        else
-            switcher=1;
-        end
-    end
-    
-end
-toc
 
 %% plot final meshes
 figure()
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2);
 hold on
-source_geom_orig=patch('Faces',source.faces_reduce,'Vertices',source_nodes,'FaceColor','b','EdgeAlpha',.2);
-source_geom_fin=patch('Faces',source.faces_reduce,'Vertices',source.nodes_reduce,'FaceColor','g','EdgeAlpha',.2);
+source_geom_orig=patch('Faces',source.faces,'Vertices',source.nodes_deform,'FaceColor','b','EdgeAlpha',.2);
+source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','g','EdgeAlpha',.2);
 axis equal
 
 
 %% get net change
-source.change=source_nodes-source.nodes;
-deform_net=newrbe(source.nodes',source.change',100);
+source.change=source.nodes_deform-source.nodes;
+deform_net=newgrnn(source.nodes',source.change');
 
 %% get new points
-source.nodes_deform=[sim(deform_net,source.nodes_orig(:,2:end)')]'+source.nodes_orig(:,2:end);
+source.nodes_deform_total=[sim(deform_net,source.nodes_orig(:,2:end)')]'+source.nodes_orig(:,2:end);
 
 
 %% plot points
@@ -218,8 +124,44 @@ figure()
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2);
 
 hold on
-source_geom_deform=patch('Faces',source_faces_plot,'Vertices',source.nodes_deform,'FaceColor','m');
+source_geom_deform=patch('Faces',source_faces_plot,'Vertices',source.nodes_deform_total,'FaceColor','m');
 axis equal
+
+%% deform inner nodes
+b_min=min(target.nodes);
+b_max=max(target.nodes);
+
+[target_tet_node,target_tet_elem,target_tet_face]=surf2mesh(target.nodes,target.faces,b_min,b_max,.5,0.05);
+
+
+%% morph full mesh nodes
+params.f=5;
+params.new_knots_per_iter=20;
+params.f_decay=1;
+params.target_source_switch_iter=2;
+params.start_target=0;
+params.max_iterations=5;
+params.include_rand_knots=0;
+params.rand_mult=0.05;
+params.initial_knots=3;
+params.knot_reset_iter=5;
+params.d_min=0.1;
+params.beta=-.01;
+params.dist_threshold=5;
+[source.nodes_deform_total]= pointCloudMorph_v2(target_tet_node,source.nodes_deform_total,params);
+
+%% plot points
+
+% scatter3(source.nodes_deform(:,1),source.nodes_deform(:,2),source.nodes_deform(:,3));
+figure()
+target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2,'FaceAlpha',.3);
+
+hold on
+source_geom_deform=patch('Faces',source_faces_plot,'Vertices',source.nodes_deform_total,'FaceColor','m','EdgeAlpha',.2,'FaceAlpha',.3);
+axis equal
+
+
+
 %% coherent point drift method
 % [registered]=nonrigidICPv1(target.nodes,source_nodes,target.faces,source.faces_reduce,50,1);
 
