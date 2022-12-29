@@ -1,21 +1,25 @@
 function [source_nodes_fit]= pointCloudMorph_v2(target_nodes,source_nodes,params)
     max_iterations=params.max_iterations;
     want_plot=params.want_plot;
-    start_target=params.start_target;
     beta=params.beta;
     scale=params.scale;
     dist_threshold=params.dist_threshold;
-    
+    dist_threshold_scale=params.dist_threshold_scale;
+    scale_scale=params.scale_scale;
+    knots_scale=params.knots_scale;
+    beta_scale=params.beta_scale;
     
     %% mesh morphin initialization
     source_nodes_0=source_nodes;
 
     %% main loop for mesh morphing
     counter=1;
-    max_count=500;
+    max_knots=500;
     switcher=1;
     while counter<=max_iterations
+        
         if switcher==1
+            % use target nodes as knot
             [ind,D] = knnsearch(source_nodes,target_nodes,'K',1);
             index_mat=[(1:size(target_nodes,1))',ind,D];
             index_mat=sortrows(index_mat,3,'descend');
@@ -24,7 +28,7 @@ function [source_nodes_fit]= pointCloudMorph_v2(target_nodes,source_nodes,params
             K=target_nodes(index_mat(1,1),:);
             count_pot=2;
             index_list=index_mat(1,:);
-            while count_knot<max_count && count_pot<size(target_nodes,1)
+            while count_knot<max_knots && count_pot<size(target_nodes,1)
                 dist_vals=pdist2(K,target_nodes(index_mat(count_pot,1),:));
                 if min(dist_vals)>dist_threshold
                     K=[K;target_nodes(index_mat(count_pot,1),:)];
@@ -45,7 +49,7 @@ function [source_nodes_fit]= pointCloudMorph_v2(target_nodes,source_nodes,params
             K=target_nodes(index_mat(1,2),:);
             count_pot=2;
             index_list=index_mat(1,:);
-            while count_knot<max_count && count_pot<size(source_nodes,1)
+            while count_knot<max_knots && count_pot<size(source_nodes,1)
                 dist_vals=pdist2(K,source_nodes(index_mat(count_pot,1),:));
                 if min(dist_vals)>dist_threshold
                     K=[K;source_nodes(index_mat(count_pot,2),:)];
@@ -74,11 +78,11 @@ function [source_nodes_fit]= pointCloudMorph_v2(target_nodes,source_nodes,params
         source_nodes=source_nodes+scale*K_new*w;
 
 
-        scale=scale*.9;
-        dist_threshold=dist_threshold*.9
-        max_count=round(max_count*1.05)
+        scale=scale*scale_scale;
+        dist_threshold=dist_threshold*dist_threshold_scale;
+        max_knots=round(max_knots*knots_scale)
         num_knots=size(K,1)
-        beta=beta*.95
+        beta=beta*beta_scale;
         
         if want_plot==1
             if counter==1
