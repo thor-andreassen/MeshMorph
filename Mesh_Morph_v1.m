@@ -140,22 +140,24 @@ params.new_knots_per_iter=20;
 params.f_decay=1;
 params.target_source_switch_iter=2;
 params.start_target=0;
-params.max_iterations=20;
+params.max_iterations=5;
 params.include_rand_knots=0;
 params.rand_mult=0.05;
 params.initial_knots=3;
 params.knot_reset_iter=5;
 params.d_min=0.1;
+params.beta=-.01;
+params.dist_threshold=5;
 [source.nodes_deform_total]= pointCloudMorph_v2(target_tet_node,source.nodes_deform_total,params);
 
 %% plot points
 
 % scatter3(source.nodes_deform(:,1),source.nodes_deform(:,2),source.nodes_deform(:,3));
 figure()
-target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2);
+target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2,'FaceAlpha',.3);
 
 hold on
-source_geom_deform=patch('Faces',source_faces_plot,'Vertices',source.nodes_deform_total,'FaceColor','m');
+source_geom_deform=patch('Faces',source_faces_plot,'Vertices',source.nodes_deform_total,'FaceColor','m','EdgeAlpha',.2,'FaceAlpha',.3);
 axis equal
 
 
