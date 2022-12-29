@@ -6,16 +6,19 @@ clc
 
 
 %% load target mesh
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Laxity FE Model\S192803_FE_Model\Iterative Alignment Check\MeshMorph\mesh_geometries\'];
-target_geom_path='VHF_Right_Bone_Femur_smooth.stl';
-source_geom_path='VHM_Right_Bone_Femur_smooth_align.stl';
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Laxity FE Model\S192803_FE_Model\Iterative Alignment Check\MeshMorph\mesh_geometries\example morphing\'];
+target_geom_path='DPK029_Femur_aligned_CircleFit.stl';
+source_geom_path='Base_Mesh_Source.stl';
 [target.faces,target.nodes]=stlRead2([stl_path,target_geom_path]);
 [source.faces,source.nodes]=stlRead2([stl_path,source_geom_path]);
 % load('femur_test')
 
+%% reduce target mesh
+[target.faces,target.nodes]=reducepatch(target.faces,target.nodes,25000);
+
 
 %% perform initial rigid alignment
-Options.Registration='Size';
+Options.Registration='Affine';
 
 source.nodes_orig=source.nodes;
 [source.nodes,M]=ICP_finite(target.nodes, source.nodes, Options);
@@ -33,10 +36,10 @@ params.want_plot=1;
 params.beta=-.9;
 params.scale=.5;
 params.dist_threshold=50;
-params.dist_threshold_scale=.9;
+params.dist_threshold_scale=.99;
 params.scale_scale=.9;
 params.knots_scale=1.1;
-params.beta_scale=.9;
+params.beta_scale=.99;
     
     
 [source.nodes_deform]= pointCloudMorph_v2(target.nodes,source.nodes,params);
@@ -52,8 +55,9 @@ source.nodes_deform=FV2.vertices;
 
 %% morph small f
 params.max_iterations=10;
-params.dist_threshold=5;
-params.beta=-.01;
+params.dist_threshold=15;
+% params.beta=-.01;
+params.beta=-.5;
 params.beta_scale=1;
 [source.nodes_deform]= pointCloudMorph_v2(target.nodes,source.nodes_deform,params);
 
@@ -84,7 +88,7 @@ source.nodes_change=source.nodes_deform-source.nodes_orig;
 
 %% animate motion
 figure('units','normalized','outerposition',[0 0 1 1]);
-num_frames=10;
+num_frames=100;
 
 col=vecnorm(source.nodes_change,2,2);
 source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_orig,'EdgeAlpha',.6,'FaceVertexCData',col,'FaceColor','interp');
@@ -92,14 +96,14 @@ source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_orig,'EdgeA
 colorbar
 colormap jet
 
-view([0,1,0]);
+view([0,-1,0]);
 camroll(90);
 pause(1);
 for count_frame=1:num_frames
     new_nodes=source.nodes_orig+(count_frame/num_frames)*source.nodes_change;
     source_geom_morph.Vertices=new_nodes;
-    view([0,1,0]);
-    pause(.1)
+    view([0,-1,0]);
+    pause(.01)
     
     
 end
@@ -110,4 +114,4 @@ end
 
 
 %% save final mesh
-stlWrite2([stl_path,'VHM_Right_Bone_Femur_smooth_morph.stl'],source.faces,source.nodes_deform);
+stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
