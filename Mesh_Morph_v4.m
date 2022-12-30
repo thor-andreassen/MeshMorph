@@ -301,6 +301,23 @@ end
 
 %% save morphing meshes
 
+source.nodes_final_3D=source.nodes_orig_3D;
+source.nodes_final_3D(:,2:end)=source_3d_nodes_renumber_new;
+
+
+
+elem_category='C';
+dim=3;
+
+nset_name='FEMUR_NODES';
+elset_name='FEMUR_ELEMS';
+
+filename='test.inp';
+saveAbaqusInputFile([results_path,'Morphed_Mesh.inp'],source.nodes_final_3D,source.elems,elem_category,dim,nset_name,elset_name);
+
+
+
+%% save morphing parameters
 save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target',...
     'model_final');
 
