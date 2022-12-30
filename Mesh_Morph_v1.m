@@ -50,8 +50,23 @@ source.nodes_reduce=source_nodes_renumber;
 source.faces_reduce=source_tri_elems;
 
 
+%% perform initial rigid alignment
+Options.Registration='Affine';
+
+source.nodes_orig_tri=source.nodes;
+[source.nodes,M]=ICP_finite(target.nodes, source.nodes, Options);
+
+%% show scaled nodes
+figure();
+plot3(source.nodes_orig_tri(:,1),source.nodes_orig_tri(:,2),source.nodes_orig_tri(:,3),'go');
+hold on
+plot3(source.nodes(:,1),source.nodes(:,2),source.nodes(:,3),'bo');
+plot3(target.nodes(:,1),target.nodes(:,2),target.nodes(:,3),'ro');
+
+
+
 %% morph large f
-close all
+% close all
 params.f=100000;
 params.new_knots_per_iter=20;
 params.f_decay=.999;
@@ -68,6 +83,12 @@ params.d_min=5;
 params.beta=-.1;
 params.scale=.5;
 params.dist_threshold=30;
+params.dist_threshold_scale=.9;
+params.scale_scale=.9;
+params.knots_scale=1.1;
+params.beta_scale=.9;
+
+
 
 [source.nodes_deform]= pointCloudMorph_v2(target.nodes,source.nodes,params);
 
@@ -81,36 +102,45 @@ patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
 source.nodes_deform=FV2.vertices;
 
 %% morph small f
-% params.f=10000;
-% params.new_knots_per_iter=20;
-% params.f_decay=.999;
-% params.target_source_switch_iter=2;
-% params.start_target=0;
-% params.max_iterations=10;
-% params.include_rand_knots=0;
-% params.rand_mult=0.1;
-% params.initial_knots=4;
-% params.d_min=1;
-% params.dist_threshold=15;
-% 
-% params.beta=-.9;
-% params.scale=.5;
-% [source.nodes_deform]= pointCloudMorph_v2(target.nodes,source.nodes_deform,params);
+params.f=10;
+params.new_knots_per_iter=20;
+params.f_decay=.99;
+params.target_source_switch_iter=10;
+params.start_target=0;
+params.max_iterations=50;
+params.include_rand_knots=0;
+params.rand_mult=0.1;
+params.initial_knots=4;
+params.d_min=1;
+params.dist_threshold=15;
+
+params.beta=-.9;
+params.scale=.5;
+[source.nodes_deform]= pointCloudMorph(target.nodes,source.nodes_deform,params);
+
+
+%% smooth mesh
+smooth_mesh.vertices=source.nodes_deform;
+smooth_mesh.faces=source.faces;
+FV2=smoothpatch(smooth_mesh,0,2);
+patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
+
+source.nodes_deform=FV2.vertices;
 
 
 
 
 %% plot final meshes
 figure()
-target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2);
+target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2,'FaceAlpha',.8);
 hold on
-source_geom_orig=patch('Faces',source.faces,'Vertices',source.nodes_deform,'FaceColor','b','EdgeAlpha',.2);
-source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','g','EdgeAlpha',.2);
+source_geom_orig=patch('Faces',source.faces,'Vertices',source.nodes_deform,'FaceColor','b','EdgeAlpha',.2,'FaceAlpha',.8);
+source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','g','EdgeAlpha',.2,'FaceAlpha',.8);
 axis equal
 
 
 %% get net change
-source.change=source.nodes_deform-source.nodes;
+source.change=source.nodes_deform-source.nodes_orig_tri;
 deform_net=newgrnn(source.nodes',source.change');
 
 %% get new points
@@ -136,18 +166,24 @@ b_max=max(target.nodes);
 
 %% morph full mesh nodes
 params.f=5;
-params.new_knots_per_iter=20;
+params.new_knots_per_iter=10;
 params.f_decay=1;
 params.target_source_switch_iter=2;
 params.start_target=0;
-params.max_iterations=5;
+params.max_iterations=100;
 params.include_rand_knots=0;
 params.rand_mult=0.05;
 params.initial_knots=3;
 params.knot_reset_iter=5;
 params.d_min=0.1;
-params.beta=-.01;
-params.dist_threshold=5;
+params.beta=-.1;
+params.dist_threshold=10;
+params.dist_threshold_scale=.99;
+params.scale_scale=.9;
+params.knots_scale=1.25;
+params.beta_scale=1;
+
+
 [source.nodes_deform_total]= pointCloudMorph_v2(target_tet_node,source.nodes_deform_total,params);
 
 %% plot points

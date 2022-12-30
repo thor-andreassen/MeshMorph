@@ -1,61 +1,34 @@
 function [source_nodes_fit]= pointCloudMorph_v2(target_nodes,source_nodes,params)
-    %% clearing
-%     clear
-%     close all
-%     clc
-%     
-%     %% load data
-%     load('temp_test.mat');
-    
-    %%data
-    f=params.f;
-    f_decay=params.f_decay;
     max_iterations=params.max_iterations;
     want_plot=params.want_plot;
-    rand_mult=params.rand_mult;
-    rand_decay=params.rand_decay;
-    include_rand_knots=params.include_rand_knots;
-    knot_reset_iter=params.knot_reset_iter;
-    target_source_switch_iter=params.target_source_switch_iter;
-    start_target=params.start_target;
-    p=params.new_knots_per_iter;
-    initial_knots=params.initial_knots;
-    d_min=params.d_min;
     beta=params.beta;
     scale=params.scale;
     dist_threshold=params.dist_threshold;
-    
+    dist_threshold_scale=params.dist_threshold_scale;
+    scale_scale=params.scale_scale;
+    knots_scale=params.knots_scale;
+    beta_scale=params.beta_scale;
     
     %% mesh morphin initialization
     source_nodes_0=source_nodes;
 
     %% main loop for mesh morphing
     counter=1;
-    error_hist=[];
-    switcher=start_target;
-    max_count=500;
+    max_knots=500;
     switcher=1;
-    
-
-    
-    
     while counter<=max_iterations
         
-        
-        % get sigmas
         if switcher==1
+            % use target nodes as knot
             [ind,D] = knnsearch(source_nodes,target_nodes,'K',1);
             index_mat=[(1:size(target_nodes,1))',ind,D];
-            
-            
             index_mat=sortrows(index_mat,3,'descend');
             
             count_knot=1;
-            
             K=target_nodes(index_mat(1,1),:);
             count_pot=2;
             index_list=index_mat(1,:);
-            while count_knot<max_count && count_pot<size(target_nodes,1)
+            while count_knot<max_knots && count_pot<size(target_nodes,1)
                 dist_vals=pdist2(K,target_nodes(index_mat(count_pot,1),:));
                 if min(dist_vals)>dist_threshold
                     K=[K;target_nodes(index_mat(count_pot,1),:)];
@@ -67,20 +40,16 @@ function [source_nodes_fit]= pointCloudMorph_v2(target_nodes,source_nodes,params
             switcher=1;
             target_points=target_nodes(index_list(:,1),:);
             source_points=source_nodes(index_list(:,2),:);
-%             knot_points=source_points;
         else
             [ind,D] = knnsearch(target_nodes,source_nodes,'K',1);
             index_mat=[(1:size(source_nodes,1))',ind,D];
-            
-            
             index_mat=sortrows(index_mat,3,'descend');
             
             count_knot=1;
-            
             K=target_nodes(index_mat(1,2),:);
             count_pot=2;
             index_list=index_mat(1,:);
-            while count_knot<max_count && count_pot<size(source_nodes,1)
+            while count_knot<max_knots && count_pot<size(source_nodes,1)
                 dist_vals=pdist2(K,source_nodes(index_mat(count_pot,1),:));
                 if min(dist_vals)>dist_threshold
                     K=[K;source_nodes(index_mat(count_pot,2),:)];
@@ -93,12 +62,10 @@ function [source_nodes_fit]= pointCloudMorph_v2(target_nodes,source_nodes,params
             
             target_points=target_nodes(index_list(:,2),:);
             source_points=source_nodes(index_list(:,1),:);
-%             knot_points=target_points;
         end
         
-        knot_points=target_points;
         
-
+        knot_points=target_points;
         dist_test=pdist2(source_points,knot_points);
         c=diag(dist_test).^3;
         K_test=(dist_test.^3+(c)').^beta;
@@ -111,11 +78,11 @@ function [source_nodes_fit]= pointCloudMorph_v2(target_nodes,source_nodes,params
         source_nodes=source_nodes+scale*K_new*w;
 
 
-        scale=scale*.9;
-        dist_threshold=dist_threshold*.9
-        max_count=round(max_count*1.05)
+        scale=scale*scale_scale;
+        dist_threshold=dist_threshold*dist_threshold_scale;
+        max_knots=round(max_knots*knots_scale)
         num_knots=size(K,1)
-        beta=beta*.95
+        beta=beta*beta_scale;
         
         if want_plot==1
             if counter==1
