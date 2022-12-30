@@ -9,6 +9,8 @@ clc
 total_time=tic;
 
 stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Laxity FE Model\S192803_FE_Model\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
+results_path=[stl_path,'Results\'];
+
 target_path=[stl_path,'Target Geom\'];
 source_path=[stl_path,'Source Geom\'];
 site_path=[stl_path,'Site Geom\'];
@@ -29,14 +31,16 @@ files=dir([source_path,'*.stl']);
 Options.Registration='Rigid';
 
 source.nodes_orig=source.nodes;
-[source.nodes,M]=ICP_finite(target.nodes, source.nodes, Options);
-source.nodes_affine=source.nodes;
+[source.nodes,M1]=ICP_finite(target.nodes, source.nodes, Options);
+
 
 % Options.TolX=.0001;
 % Options.TolP=.0001;
 Options.Registration='Affine';
-[source.nodes,M]=ICP_finite(target.nodes, source.nodes, Options);
+[source.nodes,M2]=ICP_finite(target.nodes, source.nodes, Options);
+source.nodes_affine=source.nodes;
 
+Affine_TransMat=M2*M1;
 
 %% reduce target mesh
 [target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.4);
@@ -109,9 +113,9 @@ source.nodes_deform=FV2.vertices;
 
 %% deform original mesh
 node_deform=source.nodes_deform-source.nodes_reduce;
-model=newgrnn(source.nodes_reduce',node_deform',10);
+model_orig=newgrnn(source.nodes_reduce',node_deform',10);
 
-new_deform=sim(model,source.nodes');
+new_deform=sim(model_orig,source.nodes');
 source.nodes=source.nodes+new_deform';
 
 
@@ -217,6 +221,11 @@ axis equal
 
 source.nodes_change=source.nodes-source.nodes_affine;
 toc(total_time)
+
+%% final deformation model
+model_final=newgrnn(source.nodes_affine',source.nodes_change',1);
+
+
 %% animate motion
 figure('units','normalized','outerposition',[0 0 1 1]);
 num_frames=100;
@@ -239,9 +248,57 @@ for count_frame=1:num_frames
     
 end
 
+%% save morphing data
+morph_fig=figure()
+subplot(1,2,1)
+target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
+subplot(1,2,2)
+source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes_orig,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
+
+files=dir([site_path,'*.stl']);
+colors=jet(length(files));
+for count_site=1:length(files)
+    [site.faces,site.nodes]=stlRead2([site_path,files(count_site).name]);
+    subplot(1,2,2)
+    hold on
+    p_site_orig{count_site}=patch('Faces',site.faces,'Vertices',site.nodes,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
+
+    
+    
+    temp_nodes=[site.nodes,ones(size(site.nodes,1),1)];
+    affine_nodes=[Affine_TransMat*temp_nodes']';
+    site.nodes_deform=affine_nodes(:,1:3);
+    
+    new_deform=sim(model_final,site.nodes_deform');
+    site.nodes_deform=site.nodes_deform+new_deform';
+    new_geom.faces=site.faces;
+    new_geom.vertices=site.nodes_deform;
+    subplot(1,2,1)
+    hold on
+    p_site_new{count_site}=patch('Faces',site.faces,'Vertices',site.nodes_deform,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
+    try
+        stlWrite2([results_path,files(count_site).name,'_Morph.stl'],site.faces,site.nodes_deform);
+    catch
+        stlwrite([results_path,files(count_site).name,'_Morph.stl'],new_geom);
+    end
+end
+
+saveas(morph_fig,[results_path,'Morph_Figure.png']);
+saveas(morph_fig,[results_path,'Morph_Figure.fig']);
+%% save morphing meshes
+files=dir([target_path,'*.stl']);
+target_filename=files(1).name;
+try
+    stlWrite2([results_path,target_filename,'_Morph.stl'],source.faces,source.nodes);
+catch
+    new_geom.faces=source.faces;
+    new_geom.vertices=source.nodes;
+    stlwrite([results_path,target_filename,'_Morph.stl'],new_geom);
+end
 
 
-
+save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target',...
+    'model_final');
 
 
 %% save final mesh
