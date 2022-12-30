@@ -14,6 +14,8 @@ results_path=[stl_path,'Results\'];
 target_path=[stl_path,'Target Geom\'];
 source_path=[stl_path,'Source Geom\'];
 site_path=[stl_path,'Site Geom\'];
+landmark_path=[stl_path,'Landmarks\'];
+
 
 %% load target geometries
 files=dir([target_path,'*.stl']);
@@ -248,32 +250,48 @@ for count_frame=1:num_frames
     
 end
 
+
+%% load landmarks
+files=dir([landmark_path,'*.csv']);
+landmark.orig=csvread([landmark_path,files(1).name]);
+landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
+
+
 %% save morphing data
 morph_fig=figure()
-subplot(1,2,1)
-target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
 subplot(1,2,2)
+target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
+hold on
+plot3(landmark.deform(:,1),landmark.deform(:,2),landmark.deform(:,3),'kx','MarkerSize',20);
+
+
+
+subplot(1,2,1)
 source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes_orig,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
+hold on
+plot3(landmark.orig(:,1),landmark.orig(:,2),landmark.orig(:,3),'kx','MarkerSize',20);
+
+
 
 files=dir([site_path,'*.stl']);
 colors=jet(length(files));
 for count_site=1:length(files)
     [site.faces,site.nodes]=stlRead2([site_path,files(count_site).name]);
-    subplot(1,2,2)
+    subplot(1,2,1)
     hold on
     p_site_orig{count_site}=patch('Faces',site.faces,'Vertices',site.nodes,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
 
     
-    
-    temp_nodes=[site.nodes,ones(size(site.nodes,1),1)];
-    affine_nodes=[Affine_TransMat*temp_nodes']';
-    site.nodes_deform=affine_nodes(:,1:3);
-    
-    new_deform=sim(model_final,site.nodes_deform');
-    site.nodes_deform=site.nodes_deform+new_deform';
+    site.nodes_deform=applyMorphToNodes(site.nodes,Affine_TransMat,model_final);
+%     temp_nodes=[site.nodes,ones(size(site.nodes,1),1)];
+%     affine_nodes=[Affine_TransMat*temp_nodes']';
+%     site.nodes_deform=affine_nodes(:,1:3);
+%     
+%     new_deform=sim(model_final,site.nodes_deform');
+%     site.nodes_deform=site.nodes_deform+new_deform';
     new_geom.faces=site.faces;
     new_geom.vertices=site.nodes_deform;
-    subplot(1,2,1)
+    subplot(1,2,2)
     hold on
     p_site_new{count_site}=patch('Faces',site.faces,'Vertices',site.nodes_deform,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
     try
@@ -298,7 +316,7 @@ end
 
 
 save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target',...
-    'model_final');
+    'model_final','landmark');
 
 
 %% save final mesh
