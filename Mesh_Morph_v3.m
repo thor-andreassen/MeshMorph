@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Laxity FE Model\S192803_FE_Model\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Laxity FE Model\S192803_FE_Model\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
 target_path=[stl_path,'Target Geom\'];
 source_path=[stl_path,'Source Geom\'];
 site_path=[stl_path,'Site Geom\'];
@@ -63,6 +63,7 @@ params.knots_scale=1.1;
 params.beta_scale=.99;
 params.smooth=10;
 params.normal_scale=10;
+params.smooth_decay=1;
     
 [source.nodes_deform]= pointCloudMorph_v3(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
 
@@ -118,7 +119,7 @@ source.nodes=source.nodes+new_deform';
 
 
 %% morph small f
-params.max_iterations=5;
+params.max_iterations=20;
 params.want_plot=1;
 params.beta=-.9;
 params.scale=.5;
@@ -128,6 +129,7 @@ params.scale_scale=.9;
 params.knots_scale=1.1;
 params.beta_scale=.99;
 params.smooth=10;
+params.smooth_decay=.95;
     
 [source.nodes]= pointCloudMorph_v3(target.nodes,source.nodes,params,target.faces,source.faces);
 
@@ -147,7 +149,7 @@ source.nodes=smooth_mesh.vertices;
 figure();
 smooth_mesh.vertices=source.nodes;
 smooth_mesh.faces=source.faces;
-FV2=smoothpatch(smooth_mesh,0,3);
+FV2=smoothpatch(smooth_mesh,0,1);
 patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
 
 source.nodes=FV2.vertices;
@@ -158,22 +160,31 @@ source.nodes=FV2.vertices;
 
 
 
-%% morph small f
-params.max_iterations=5;
-params.want_plot=1;
-params.beta=-.9;
-params.scale=.5;
-params.dist_threshold=15;
-params.dist_threshold_scale=.99;
-params.scale_scale=.9;
-params.knots_scale=1.1;
-params.beta_scale=.99;
-params.smooth=5;
-params.normal_scale=1;
-    
-[source.nodes]= pointCloudMorph_v3(target.nodes,source.nodes,params,target.faces,source.faces);
+% % % %% morph small f
+% % % params.max_iterations=5;
+% % % params.want_plot=1;
+% % % params.beta=-.9;
+% % % params.scale=.5;
+% % % params.dist_threshold=15;
+% % % params.dist_threshold_scale=.99;
+% % % params.scale_scale=.9;
+% % % params.knots_scale=1.1;
+% % % params.beta_scale=.99;
+% % % params.smooth=5;
+% % % params.normal_scale=1;
+% % %     
+% % % [source.nodes]= pointCloudMorph_v3(target.nodes,source.nodes,params,target.faces,source.faces);
 
-
+% % % %% smooth mesh
+% % % figure();
+% % % smooth_mesh.vertices=source.nodes;
+% % % smooth_mesh.faces=source.faces;
+% % % 
+% % % 
+% % % [smooth_mesh.vertices]=improveTriMeshQuality(smooth_mesh.faces,smooth_mesh.vertices,2,1,.01);
+% % % patch('Faces',smooth_mesh.faces,'Vertices',smooth_mesh.vertices,'FaceColor','r','EdgeAlpha',.3);
+% % % 
+% % % source.nodes=smooth_mesh.vertices;
 
 
 %% plot final meshes
@@ -204,29 +215,29 @@ axis equal
 
 %% determine net motion
 
-source.nodes_change=source.nodes-source.nodes_orig;
+source.nodes_change=source.nodes-source.nodes_affine;
 toc(total_time)
-% % %% animate motion
-% % figure('units','normalized','outerposition',[0 0 1 1]);
-% % num_frames=100;
-% % 
-% % col=vecnorm(source.nodes_change,2,2);
-% % source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_orig,'EdgeAlpha',.6,'FaceVertexCData',col,'FaceColor','interp');
-% % 
-% % colorbar
-% % colormap jet
-% % 
-% % view([0,-1,0]);
-% % camroll(90);
-% % pause(1);
-% % for count_frame=1:num_frames
-% %     new_nodes=source.nodes_orig+(count_frame/num_frames)*source.nodes_change;
-% %     source_geom_morph.Vertices=new_nodes;
-% %     view([0,-1,0]);
-% %     pause(.01)
-% %     
-% %     
-% % end
+%% animate motion
+figure('units','normalized','outerposition',[0 0 1 1]);
+num_frames=100;
+
+col=vecnorm(source.nodes_change,2,2);
+source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_affine,'EdgeAlpha',.6,'FaceVertexCData',col,'FaceColor','interp');
+
+colorbar
+colormap jet
+
+view([1,1,1]);
+pause(1);
+for count_frame=1:num_frames
+    new_nodes=source.nodes_affine+(count_frame/num_frames)*source.nodes_change;
+    source_geom_morph.Vertices=new_nodes;
+    view([1,1,1]);
+    axis square
+    pause(.01)
+    
+    
+end
 
 
 

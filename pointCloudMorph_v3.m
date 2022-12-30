@@ -10,6 +10,7 @@ function [source_nodes_fit]= pointCloudMorph_v3(target_nodes,source_nodes,params
     beta_scale=params.beta_scale;
     smooth=params.smooth;
     normal_scale=params.normal_scale;
+    smooth_decay=params.smooth_decay;
     
     %% mesh morphin initialization
     source_nodes_0=source_nodes;
@@ -56,6 +57,7 @@ vertex_normal_target=vertex_normal_target*normal_scale;
         deform_vector=sim(model,source_nodes');
         source_nodes=source_nodes+scale*deform_vector';
         
+        smooth=smooth*smooth_decay;
         
         if want_plot==1
             if counter==1
