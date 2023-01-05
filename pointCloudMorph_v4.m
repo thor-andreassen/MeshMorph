@@ -1,4 +1,9 @@
 function [source_nodes_fit]= pointCloudMorph_v4(target_nodes,source_nodes,params,target_faces,source_faces)
+    if nargin <=3
+        use_normal=0;
+    else
+        use_normal=1;
+    end
     max_iterations=params.max_iterations;
     want_plot=params.want_plot;
     beta=params.beta;
@@ -11,6 +16,8 @@ function [source_nodes_fit]= pointCloudMorph_v4(target_nodes,source_nodes,params
     smooth=params.smooth;
     normal_scale=params.normal_scale;
     smooth_decay=params.smooth_decay;
+    normal_scale_decay=params.normal_scale_decay;
+    use_parallel=params.use_parallel;
     
     %% mesh morphin initialization
     source_nodes_0=source_nodes;
@@ -20,31 +27,40 @@ function [source_nodes_fit]= pointCloudMorph_v4(target_nodes,source_nodes,params
     max_knots=500;
     switcher=1;
 %     target_scale
-vertex_normal_target=target_nodes;
-for count_node_target=1:size(target_nodes)
-    vertex_normal_target(count_node_target,:)=findVertexNormalFromMesh(target_faces,target_nodes,count_node_target);
+if use_normal==1
+    vertex_normal_target=target_nodes;
+    for count_node_target=1:size(target_nodes)
+        vertex_normal_target(count_node_target,:)=findVertexNormalFromMesh(target_faces,target_nodes,count_node_target);
+    end
+    vertex_normal_target=vertex_normal_target*normal_scale;
 end
-vertex_normal_target=vertex_normal_target*normal_scale;
-
 
     while counter<=max_iterations
 
-        vertex_normal_source=source_nodes;
-        for count_node_source=1:size(source_nodes)
-            vertex_normal_source(count_node_source,:)=findVertexNormalFromMesh(source_faces,source_nodes,count_node_source);
+        if use_normal==1
+            vertex_normal_source=source_nodes;
+            for count_node_source=1:size(source_nodes)
+                vertex_normal_source(count_node_source,:)=findVertexNormalFromMesh(source_faces,source_nodes,count_node_source);
+            end
+            vertex_normal_source=vertex_normal_source*normal_scale;
         end
-        vertex_normal_source=vertex_normal_source*normal_scale;
 
         counter
-        [ind_target] = knnsearch([source_nodes,vertex_normal_source],[target_nodes,vertex_normal_target],'K',1);
-
-%         [ind_target] = knnsearch(source_nodes,target_nodes,'K',1);
+        if use_normal==1
+            [ind_target] = knnsearch([source_nodes,vertex_normal_source],[target_nodes,vertex_normal_target],'K',1);
+        else
+            [ind_target] = knnsearch(source_nodes,target_nodes,'K',1);
+        end
+        
         point_nodes_target=target_nodes;
         vec_source_to_target1=target_nodes-source_nodes(ind_target,:);
         
-        [ind_source] = knnsearch([target_nodes,vertex_normal_target],[source_nodes,vertex_normal_source],'K',1);
-
-%         [ind_source] = knnsearch(target_nodes,source_nodes,'K',1);
+        if use_normal==1
+            [ind_source] = knnsearch([target_nodes,vertex_normal_target],[source_nodes,vertex_normal_source],'K',1);
+        else
+            [ind_source] = knnsearch(target_nodes,source_nodes,'K',1);
+        end
+        
         point_nodes_source=source_nodes;
         vec_source_to_target2=target_nodes(ind_source,:)-source_nodes;
         
@@ -54,10 +70,17 @@ vertex_normal_target=vertex_normal_target*normal_scale;
         
         model=newgrnn(all_points',all_vectors',smooth);
         
-        deform_vector=sim(model,source_nodes');
+        if use_parallel==1
+            deform_vector=sim(model,source_nodes','useParallel','yes');
+        else
+            deform_vector=sim(model,source_nodes');
+        end
+        
+        
         source_nodes=source_nodes+scale*deform_vector';
         
         smooth=smooth*smooth_decay;
+        normal_scale=normal_scale*normal_scale_decay;
         
         if want_plot==1
             if counter==1
