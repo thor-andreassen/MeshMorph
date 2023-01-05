@@ -46,5 +46,5 @@ for count_row=1:size(elements,1)
     end
 end
 fclose(fid);
-patch('Faces',elements(:,2:4)-100,'Vertices',nodes(:,2:end),...
-    'FaceColor','r','EdgeAlpha',.3)
+% patch('Faces',elements(:,2:4)-100,'Vertices',nodes(:,2:end),...
+%     'FaceColor','r','EdgeAlpha',.3)

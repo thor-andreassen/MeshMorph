@@ -14,7 +14,7 @@ results_path=[stl_path,'Results\'];
 %% load target mesh
 stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\mesh_geometries\'];
 
-% target_geom_path='S193761_Cart_Femur_align.inp';
+target_geom_path='S193761_Cart_Femur_align_v2.stl';
 % source_geom_path='S192803_Cart_Femur_align.inp';
 % [target.nodes,target.elems,target.elems_renum]=READ_MESH_NUMS_AJC([stl_path,target_geom_path]);
 % [source.nodes,source.elems,source.elems_renum]=READ_MESH_NUMS_AJC([stl_path,source_geom_path]);

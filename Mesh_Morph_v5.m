@@ -14,20 +14,22 @@ results_path=[stl_path,'Results\'];
 %% load target mesh
 stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\mesh_geometries\'];
 
-% target_geom_path='S193761_Cart_Femur_align.inp';
+target_geom_path='S193761_Cart_Femur_align_v2.stl';
+[target.faces,target.nodes]=stlRead2([stl_path,target_geom_path]);
+
 % source_geom_path='S192803_Cart_Femur_align.inp';
 % [target.nodes,target.elems,target.elems_renum]=READ_MESH_NUMS_AJC([stl_path,target_geom_path]);
 % [source.nodes,source.elems,source.elems_renum]=READ_MESH_NUMS_AJC([stl_path,source_geom_path]);
 % save('input_data.mat','source','target')
-load('input_data.mat','source','target')
+load('input_data.mat','source')
 
 %% get mesh surfaces
-[target_face_outer_surf,target_face_list,target_nodes_surf,target_nodes_outer_surf_coords,target_inner_nodes,target_nodes_inner_coords]=get3DElementOuterSurface(target.elems_renum(:,2:end),target.nodes(:,2:end));
+% [target_face_outer_surf,target_face_list,target_nodes_surf,target_nodes_outer_surf_coords,target_inner_nodes,target_nodes_inner_coords]=get3DElementOuterSurface(target.elems_renum(:,2:end),target.nodes(:,2:end));
 [source_face_outer_surf,source_face_list,source_nodes_surf,source_nodes_outer_surf_coords,source_inner_nodes,source_nodes_inner_coords]=get3DElementOuterSurface(source.elems_renum(:,2:end),source.nodes(:,2:end));
 
 %% renumber outer faces
-[target_faces_renumber,target_nodes_renumber,target_node_correspondance_list]=renumberFacesandNodesSubset(target_face_outer_surf,target.nodes(:,2:end));
-target_tri_elems=splitQuadsToTries(target_faces_renumber);
+% [target_faces_renumber,target_nodes_renumber,target_node_correspondance_list]=renumberFacesandNodesSubset(target_face_outer_surf,target.nodes(:,2:end));
+% target_tri_elems=splitQuadsToTries(target_faces_renumber);
 % patch('Faces',target_tri_elems,'Vertices',target_nodes_renumber,'FaceColor','r','EdgeAlpha',.3);
 
 % hold on
@@ -38,9 +40,9 @@ source_tri_elems=splitQuadsToTries(source_faces_renumber);
 
 source_faces_plot=getHexorTetFaces(source.elems_renum(:,2:end));
 %% reduce source
-target.nodes_orig_3D=target.nodes;
-target.nodes=target_nodes_renumber;
-target.faces=target_tri_elems;
+% target.nodes_orig_3D=target.nodes;
+% target.nodes=target_nodes_renumber;
+% target.faces=target_tri_elems;
 
 source.nodes_orig_3D=source.nodes;
 source.nodes=source_nodes_renumber;
@@ -123,7 +125,7 @@ params.smooth=1;
 figure();
 smooth_mesh.vertices=source.nodes_deform;
 smooth_mesh.faces=source.faces_reduce;
-FV2=smoothpatch(smooth_mesh,0,30);
+FV2=smoothpatch(smooth_mesh,0,4);
 patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
 
 source.nodes_deform=FV2.vertices;

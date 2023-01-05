@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Laxity FE Model\S192803_FE_Model\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
 results_path=[stl_path,'Results\'];
 
 target_path=[stl_path,'Target Geom\'];
