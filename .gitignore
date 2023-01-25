@@ -2,3 +2,12 @@
 *.mat
 *.stl
 *.inp
+*.fig
+mesh_geometries/Results/3D_Mesh_Created.fig
+mesh_geometries/Results/3D_Mesh_Created.png
+S193761_Morph_bones/Tibia/Results/Morph_Figure.fig
+S193761_Morph_bones/Tibia/Results/Morph_Figure.png
+mesh_geometries/Results/3D_Mesh_Created.fig
+mesh_geometries/Results/3D_Mesh_Created.png
+S193761_Morph_bones/Tibia/Results/Morph_Figure.fig
+S193761_Morph_bones/Tibia/Results/Morph_Figure.png
