@@ -258,7 +258,7 @@ toc(total_time)
 
 
 %% final deformation model
-model_final=newgrnn(source.nodes_affine',source.nodes_change',10);
+model_final=newgrnn(source.nodes_affine',source.nodes_change',100);
 
 
 
