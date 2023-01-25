@@ -282,7 +282,7 @@ b_max=max(target.nodes);
 [target_tet_node,target_tet_elem,target_tet_face]=surf2mesh(target.nodes,target.faces,b_min,b_max,.5,0.05);
 
 %% morph inner nodes
-params.smooth=5;
+params.smooth=50;
 [source_3d_nodes_renumber_new]= pointCloudMorph_v4(target_tet_node,source_3d_nodes_renumber_new,params);
 
 %% 3D figures
