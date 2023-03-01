@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\Ligament_Optimization\DU02 Morphing\Morphed Geometries\Tibia\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Femur\'];
 results_path=[stl_path,'Results\'];
 
 target_path=[stl_path,'Target Geom\'];
@@ -253,11 +253,18 @@ end
 
 %% load landmarks
 files=dir([landmark_path,'*.csv']);
-landmark.orig=csvread([landmark_path,files(1).name]);
+% landmark.orig=csvread([landmark_path,files(1).name]);
+temp_node=readtable([landmark_path,files(2).name]);
+landmark.orig=table2array(temp_node(:,2:end));
 landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
 
+new_table=temp_node;
+new_table{:,2:end}=landmark.deform;
+new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
+writetable(new_table,[results_path,files(2).name])
 
 %% save morphing data
+
 morph_fig=figure()
 subplot(1,2,2)
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
