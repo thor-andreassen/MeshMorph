@@ -1,0 +1,3 @@
+[submodule "Fast_Point2TriMesh"]
+	path = Fast_Point2TriMesh
+	url = https://github.com/thor-andreassen/Fast_Point2TriMesh
