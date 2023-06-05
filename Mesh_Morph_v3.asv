@@ -264,9 +264,9 @@ end
 
 
 files=dir([landmark_path,'*.csv']);
-% landmark.orig=csvread([landmark_path,files(1).name]);
-temp_node=readtable([landmark_path,files(2).name]);
-landmark.orig=table2array(temp_node(:,2:end));
+landmark.orig=csvread([landmark_path,files(1).name]);
+% temp_node=readtable([landmark_path,files(2).name]);
+% landmark.orig=table2array(temp_node(:,2:end));
 if convert_to_mm==1
     landmark.orig=landmark.orig*1000;
     landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
@@ -279,7 +279,7 @@ new_table=temp_node;
 new_table{:,2:end}=landmark.deform;
 new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
 writetable(new_table,[results_path,files(2).name])
-% csvwrite([results_path,files(1).name],landmark.deform);
+csvwrite([results_path,files(1).name],landmark.deform);
 
 %% save morphing data
 if convert_to_mm==1
@@ -356,9 +356,5 @@ save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target
 %% save final mesh
 stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
 
-%% computer hausdorf metrics
 
 
-haus_distance=getHausdorffDistance(source.nodes,target.nodes);
-figure()
-cdfplot(haus_distance)
