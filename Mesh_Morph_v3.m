@@ -8,14 +8,14 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\Ligament_Optimization\DU02 Morphing\Morphed Geometries\Tibia\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Femur\'];
 results_path=[stl_path,'Results\'];
 
 target_path=[stl_path,'Target Geom\'];
 source_path=[stl_path,'Source Geom\'];
 site_path=[stl_path,'Site Geom\'];
 landmark_path=[stl_path,'Landmarks\'];
-
+convert_to_mm=0;
 
 %% load target geometries
 files=dir([target_path,'*.stl']);
@@ -28,6 +28,11 @@ files=dir([source_path,'*.stl']);
 % load('femur_test')
 
 
+%% scale geom
+if convert_to_mm==1
+    source.nodes=source.nodes*1000;
+    target.nodes=target.nodes*1000;
+end
 
 %% perform initial rigid alignment
 Options.Registration='Rigid';
@@ -45,8 +50,8 @@ source.nodes_affine=source.nodes;
 Affine_TransMat=M2*M1;
 
 %% reduce target mesh
-[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.4);
-[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.4);
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.1);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.1);
 
 
 
@@ -229,7 +234,9 @@ model_final=newgrnn(source.nodes_affine',source.nodes_change',1);
 
 
 %% animate motion
-figure('units','normalized','outerposition',[0 0 1 1]);
+% v=VideoWriter('test.avi');
+% open(v);
+fig_anim=figure('units','normalized','outerposition',[0 0 1 1]);
 num_frames=100;
 
 col=vecnorm(source.nodes_change,2,2);
@@ -245,19 +252,46 @@ for count_frame=1:num_frames
     source_geom_morph.Vertices=new_nodes;
     view([1,1,1]);
     axis square
+    frame_val=getframe(fig_anim);
+%     writeVideo(v,frame_val);
     pause(.01)
     
     
 end
-
+% close(v);
 
 %% load landmarks
-files=dir([landmark_path,'*.csv']);
-landmark.orig=csvread([landmark_path,files(1).name]);
-landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
 
+
+files=dir([landmark_path,'*.csv']);
+% landmark.orig=csvread([landmark_path,files(1).name]);
+temp_node=readtable([landmark_path,files(2).name]);
+landmark.orig=table2array(temp_node(:,2:end));
+if convert_to_mm==1
+    landmark.orig=landmark.orig*1000;
+    landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
+    landmark.orig=landmark.orig/1000;
+    landmark.deform=landmark.deform/1000;
+else
+    landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
+end
+new_table=temp_node;
+new_table{:,2:end}=landmark.deform;
+new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
+writetable(new_table,[results_path,files(2).name])
+% csvwrite([results_path,files(1).name],landmark.deform);
 
 %% save morphing data
+if convert_to_mm==1
+    target.nodes=target.nodes/1000;
+    source.nodes_orig=source.nodes_orig/1000;
+    source.nodes=source.nodes/1000;
+    source.nodes_change=source.nodes_change/1000;
+    source.nodes_deform=source.nodes_deform/1000;
+    source.nodes_reduce=source.nodes_reduce/1000;
+    source.nodes_affine=source.nodes_affine/1000;
+end
+
 morph_fig=figure()
 subplot(1,2,2)
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
@@ -320,4 +354,11 @@ save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target
 
 
 %% save final mesh
-% stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
+stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
+
+%% computer hausdorf metrics
+
+
+haus_distance=getHausdorffDistance(source.nodes,target.nodes);
+figure()
+cdfplot(haus_distance)

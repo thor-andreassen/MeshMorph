@@ -77,7 +77,7 @@ vertex_normal_target=vertex_normal_target*normal_scale;
                 p3.XData=target_nodes(:,1);
                 p3.YData=target_nodes(:,2);
                 p3.ZData=target_nodes(:,3);
-                pause(.01);
+                pause(.01);                                                                                                                          
             end
 
         end
