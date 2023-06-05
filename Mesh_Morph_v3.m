@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Femur\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
 results_path=[stl_path,'Results\'];
 
 target_path=[stl_path,'Target Geom\'];
@@ -50,7 +50,7 @@ source.nodes_affine=source.nodes;
 Affine_TransMat=M2*M1;
 
 %% reduce target mesh
-[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.1);
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.5);
 [source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.1);
 
 
@@ -145,15 +145,15 @@ params.smooth_decay=.95;
 [source.nodes]= pointCloudMorph_v3(target.nodes,source.nodes,params,target.faces,source.faces);
 
 %% smooth mesh
-figure();
-smooth_mesh.vertices=source.nodes;
-smooth_mesh.faces=source.faces;
-
-
-[smooth_mesh.vertices]=improveTriMeshQuality(smooth_mesh.faces,smooth_mesh.vertices,2,2,.01);
-patch('Faces',smooth_mesh.faces,'Vertices',smooth_mesh.vertices,'FaceColor','r','EdgeAlpha',.3);
-
-source.nodes=smooth_mesh.vertices;
+% % figure();
+% % smooth_mesh.vertices=source.nodes;
+% % smooth_mesh.faces=source.faces;
+% % 
+% % 
+% % [smooth_mesh.vertices]=improveTriMeshQuality(smooth_mesh.faces,smooth_mesh.vertices,2,2,.01);
+% % patch('Faces',smooth_mesh.faces,'Vertices',smooth_mesh.vertices,'FaceColor','r','EdgeAlpha',.3);
+% % 
+% % source.nodes=smooth_mesh.vertices;
 
 
 %% smooth
@@ -227,7 +227,7 @@ axis equal
 %% determine net motion
 
 source.nodes_change=source.nodes-source.nodes_affine;
-toc(total_time)
+time_total=toc(total_time)
 
 %% final deformation model
 model_final=newgrnn(source.nodes_affine',source.nodes_change',1);
@@ -354,11 +354,21 @@ save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target
 
 
 %% save final mesh
-stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
+% stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
 
-%% computer hausdorf metrics
+%% computer similarity metrics
 
+inputs.faces=target.faces;
+inputs.nodes=target.nodes;
+pts=source.nodes;
+
+[distances,project_pts,outside]=fastPoint2TriMesh(inputs,pts,1);
+surf_distances=abs(distances);
 
 haus_distance=getHausdorffDistance(source.nodes,target.nodes);
 figure()
+cdfplot(surf_distances)
+hold on
 cdfplot(haus_distance)
+legend({'Surface Project Distance','Hausdorff Distance'});
+save([results_path,'Morph_Similarity.mat'],'surf_distances','haus_distance')
