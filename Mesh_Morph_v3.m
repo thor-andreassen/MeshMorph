@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Femur\'];
 results_path=[stl_path,'Results\'];
 
 target_path=[stl_path,'Target Geom\'];
@@ -143,7 +143,7 @@ params.smooth=10;
 params.smooth_decay=.95;
     
 [source.nodes]= pointCloudMorph_v3(target.nodes,source.nodes,params,target.faces,source.faces);
-
+time_total=toc(total_time)
 %% smooth mesh
 % % figure();
 % % smooth_mesh.vertices=source.nodes;
@@ -157,13 +157,13 @@ params.smooth_decay=.95;
 
 
 %% smooth
-figure();
-smooth_mesh.vertices=source.nodes;
-smooth_mesh.faces=source.faces;
-FV2=smoothpatch(smooth_mesh,0,1);
-patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
-
-source.nodes=FV2.vertices;
+% figure();
+% smooth_mesh.vertices=source.nodes;
+% smooth_mesh.faces=source.faces;
+% FV2=smoothpatch(smooth_mesh,0,1);
+% patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
+% 
+% source.nodes=FV2.vertices;
 
 
 
@@ -227,7 +227,7 @@ axis equal
 %% determine net motion
 
 source.nodes_change=source.nodes-source.nodes_affine;
-time_total=toc(total_time)
+
 
 %% final deformation model
 model_final=newgrnn(source.nodes_affine',source.nodes_change',1);
@@ -371,4 +371,22 @@ cdfplot(surf_distances)
 hold on
 cdfplot(haus_distance)
 legend({'Surface Project Distance','Hausdorff Distance'});
-save([results_path,'Morph_Similarity.mat'],'surf_distances','haus_distance')
+
+
+edge_angles=getAllEdgeAngles(source.faces,source.nodes);
+geom_temp.faces=source.faces;
+geom_temp.vertices=source.nodes;
+aspects=zeros(size(geom_temp.faces,1),1);
+skewness=zeros(size(geom_temp.faces,1),1);
+for count_face=1:size(geom_temp.faces,1)
+    nodel=geom_temp.faces(count_face,:);
+    face_nodes=geom_temp.vertices(nodel,:);
+    [skewness(count_face),aspects(count_face)]=getMeshQuality2(face_nodes,1);
+    
+end
+
+node_dist_travel=vecnorm(source.nodes-source.nodes_affine,2,2);
+
+
+save([results_path,'Morph_Similarity.mat'],'surf_distances','haus_distance',...
+    'skewness','aspects','edge_angles','node_dist_travel')
