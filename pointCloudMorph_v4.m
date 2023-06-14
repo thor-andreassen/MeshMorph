@@ -92,6 +92,30 @@ end
                 axis equal
                 
                 
+% %                 fig_mesh=figure();
+% %                                 p1=plot3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),'bo','MarkerSize',5);
+% %                 hold on
+% % %                 p2=plot3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',5);
+% %                 p3=plot3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro','MarkerSize',5);
+% %                 q1=quiver3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),...
+% %                     vec_source_to_target2(:,1),vec_source_to_target2(:,2),vec_source_to_target2(:,3),2.5,'k');
+% %                 q2=quiver3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),...
+% %                     -vec_source_to_target1(:,1),-vec_source_to_target1(:,2),-vec_source_to_target1(:,3),2.5,'k');
+% %                 q3=quiver3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),...
+% %                     vec_source_to_target1(:,1),vec_source_to_target1(:,2),vec_source_to_target1(:,3),2.5,'k');
+% %                 temp_vec=deform_vector';
+% %                 q4=quiver3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),...
+% %                     temp_vec(:,1),temp_vec(:,2),temp_vec(:,3),2.5,'k');
+% %                 
+% %                 
+% %                 axis off
+% %                 axis equal
+% %                 axis([-7.5,7.5,-7.5,7.5,10,25]);
+% %                 view([1,0,0]);
+% %                 disp('test')
+                
+                
+                
 %                 deform_mesh=figure();
 %                 p4=plot3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',1);
 %                 hold on
