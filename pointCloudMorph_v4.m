@@ -76,7 +76,6 @@ end
             deform_vector=sim(model,source_nodes');
         end
         
-        
         source_nodes=source_nodes+scale*deform_vector';
         
         smooth=smooth*smooth_decay;
@@ -89,8 +88,87 @@ end
                 hold on
                 p2=plot3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',1);
                 p3=plot3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro','MarkerSize',1);
+                axis off
+                axis equal
+                
+                
+% %                 fig_mesh=figure();
+% %                                 p1=plot3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),'bo','MarkerSize',5);
+% %                 hold on
+% % %                 p2=plot3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',5);
+% %                 p3=plot3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro','MarkerSize',5);
+% %                 q1=quiver3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),...
+% %                     vec_source_to_target2(:,1),vec_source_to_target2(:,2),vec_source_to_target2(:,3),2.5,'k');
+% %                 q2=quiver3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),...
+% %                     -vec_source_to_target1(:,1),-vec_source_to_target1(:,2),-vec_source_to_target1(:,3),2.5,'k');
+% %                 q3=quiver3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),...
+% %                     vec_source_to_target1(:,1),vec_source_to_target1(:,2),vec_source_to_target1(:,3),2.5,'k');
+% %                 temp_vec=deform_vector';
+% %                 q4=quiver3(source_nodes_0(:,1),source_nodes_0(:,2),source_nodes_0(:,3),...
+% %                     temp_vec(:,1),temp_vec(:,2),temp_vec(:,3),2.5,'k');
+% %                 
+% %                 
+% %                 axis off
+% %                 axis equal
+% %                 axis([-7.5,7.5,-7.5,7.5,10,25]);
+% %                 view([1,0,0]);
+% %                 disp('test')
+                
+                
+                
+%                 deform_mesh=figure();
+%                 p4=plot3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',1);
+%                 hold on
+%                 p5=plot3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro','MarkerSize',1);
+%                 q1=quiver3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),...
+%                     vec_source_to_target2(:,1),vec_source_to_target2(:,2),vec_source_to_target2(:,3),2.5,'k');
+%                 axis off
+%                 axis equal
+%                 view([0,1,0])
+%                 disp('test')
+%                 
+%                 
+%                 deform_mesh2=figure();
+%                 p6=plot3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',1);
+%                 hold on
+%                 p7=plot3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro','MarkerSize',1);
+%                 q2=quiver3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),...
+%                     vec_source_to_target1(:,1),vec_source_to_target1(:,2),vec_source_to_target1(:,3),2.5,'k');
+%                 axis off
+%                 axis equal
+%                 view([0,1,0])
+%                 disp('test')
+
+%                 temp_deform=deform_vector';
+%                 vector_mesh=figure();
+%                 p6=plot3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',1);
+%                 hold on
+%                 q2=quiver3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),...
+%                     temp_deform(:,1),temp_deform(:,2),temp_deform(:,3),2.5,'k');
+%                 axis off
+%                 axis equal
+%                 view([0,1,0])
+%                 disp('test')
+%                 
+%                 temp_deform=vecnorm(deform_vector',2,2);
+%                 patch_mesh=figure();
+%                 p6=patch('Faces',source_faces,'Vertices',source_nodes,'FaceVertexCData',temp_deform,'FaceColor','interp','EdgeAlpha',.3);
+%                 axis off
+%                 axis equal
+%                 view([0,1,0])
+%                 c=jet(1000);
+%                 colormap(c(125:875,:));
+%                 colorbar
+%                 caxis([0,max(temp_deform)]);
+%                 axis equal
+%                 disp('test')
+                
+
+                
+                
                 
             else
+                fig_mesh;
                 p1.XData=source_nodes_0(:,1);
                 p1.YData=source_nodes_0(:,2);
                 p1.ZData=source_nodes_0(:,3);
@@ -100,7 +178,7 @@ end
                 p3.XData=target_nodes(:,1);
                 p3.YData=target_nodes(:,2);
                 p3.ZData=target_nodes(:,3);
-                pause(.01);
+                pause(.001);
             end
 
         end

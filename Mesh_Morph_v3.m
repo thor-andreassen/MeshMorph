@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Femur\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\ICP_Morph_Comparison\Full_fems\'];
 results_path=[stl_path,'Results\'];
 
 target_path=[stl_path,'Target Geom\'];
@@ -46,21 +46,21 @@ source.nodes_orig=source.nodes;
 Options.Registration='Affine';
 [source.nodes,M2]=ICP_finite(target.nodes, source.nodes, Options);
 source.nodes_affine=source.nodes;
-
 Affine_TransMat=M2*M1;
 
 %% reduce target mesh
-[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.1);
-[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.1);
-
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.05);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.05);
 
 
 %% show scaled nodes
 figure();
-plot3(source.nodes_orig(:,1),source.nodes_orig(:,2),source.nodes_orig(:,3),'go');
+scatter3(source.nodes_orig(:,1),source.nodes_orig(:,2),source.nodes_orig(:,3),1,'g');
 hold on
-plot3(source.nodes(:,1),source.nodes(:,2),source.nodes(:,3),'bo');
-plot3(target.nodes(:,1),target.nodes(:,2),target.nodes(:,3),'ro');
+scatter3(source.nodes(:,1),source.nodes(:,2),source.nodes(:,3),1,'b');
+scatter3(target.nodes(:,1),target.nodes(:,2),target.nodes(:,3),1,'r');
+axis equal
+axis off
 
 %% morph large f
 params.max_iterations=10;
@@ -74,9 +74,11 @@ params.knots_scale=1.1;
 params.beta_scale=.99;
 params.smooth=10;
 params.normal_scale=10;
+params.normal_scale_decay=.999;
+params.use_parallel=1;
 params.smooth_decay=1;
     
-[source.nodes_deform]= pointCloudMorph_v3(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
+[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
 
 
 %% smooth mesh
@@ -100,7 +102,7 @@ params.knots_scale=1.1;
 params.beta_scale=.99;
 params.smooth=1;
     
-[source.nodes_deform]= pointCloudMorph_v3(target.nodes_reduce,source.nodes_deform,params,target.faces_reduce,source.faces_reduce);
+[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_deform,params,target.faces_reduce,source.faces_reduce);
 
 %% smooth mesh
 figure();
@@ -125,6 +127,32 @@ model_orig=newgrnn(source.nodes_reduce',node_deform',10);
 new_deform=sim(model_orig,source.nodes');
 source.nodes=source.nodes+new_deform';
 
+%% plot deformations
+% figure()
+% temp_deform=new_deform';
+% vector_mesh=figure();
+% p6=plot3(source.nodes(:,1),source.nodes(:,2),source.nodes(:,3),'bo','MarkerSize',1);
+% hold on
+% q2=quiver3(source.nodes(:,1),source.nodes(:,2),source.nodes(:,3),...
+%     temp_deform(:,1),temp_deform(:,2),temp_deform(:,3),2.5,'k');
+% axis off
+% axis equal
+% view([0,1,0])
+% disp('test')
+
+
+% temp_deform=vecnorm(new_deform',2,2);
+% patch_mesh=figure();
+% p10=patch('Faces',source.faces,'Vertices',source.nodes,'FaceVertexCData',temp_deform,'FaceColor','interp','EdgeAlpha',.3);
+% axis off
+% axis equal
+% view([0,1,0])
+% c=jet(1000);
+% colormap(c(125:875,:));
+% colorbar
+% caxis([0,max(temp_deform)]);
+% axis equal
+% disp('test')
 
 
 
@@ -142,28 +170,28 @@ params.beta_scale=.99;
 params.smooth=10;
 params.smooth_decay=.95;
     
-[source.nodes]= pointCloudMorph_v3(target.nodes,source.nodes,params,target.faces,source.faces);
-
+[source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params,target.faces,source.faces);
+time_total=toc(total_time)
 %% smooth mesh
-figure();
-smooth_mesh.vertices=source.nodes;
-smooth_mesh.faces=source.faces;
-
-
-[smooth_mesh.vertices]=improveTriMeshQuality(smooth_mesh.faces,smooth_mesh.vertices,2,2,.01);
-patch('Faces',smooth_mesh.faces,'Vertices',smooth_mesh.vertices,'FaceColor','r','EdgeAlpha',.3);
-
-source.nodes=smooth_mesh.vertices;
+% % figure();
+% % smooth_mesh.vertices=source.nodes;
+% % smooth_mesh.faces=source.faces;
+% % 
+% % 
+% % [smooth_mesh.vertices]=improveTriMeshQuality(smooth_mesh.faces,smooth_mesh.vertices,2,2,.01);
+% % patch('Faces',smooth_mesh.faces,'Vertices',smooth_mesh.vertices,'FaceColor','r','EdgeAlpha',.3);
+% % 
+% % source.nodes=smooth_mesh.vertices;
 
 
 %% smooth
-figure();
-smooth_mesh.vertices=source.nodes;
-smooth_mesh.faces=source.faces;
-FV2=smoothpatch(smooth_mesh,0,1);
-patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
-
-source.nodes=FV2.vertices;
+% figure();
+% smooth_mesh.vertices=source.nodes;
+% smooth_mesh.faces=source.faces;
+% FV2=smoothpatch(smooth_mesh,0,1);
+% patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
+% 
+% source.nodes=FV2.vertices;
 
 
 
@@ -227,7 +255,7 @@ axis equal
 %% determine net motion
 
 source.nodes_change=source.nodes-source.nodes_affine;
-toc(total_time)
+
 
 %% final deformation model
 model_final=newgrnn(source.nodes_affine',source.nodes_change',1);
@@ -354,11 +382,97 @@ save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target
 
 
 %% save final mesh
-stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
+% stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
 
-%% computer hausdorf metrics
+%% computer similarity metrics
 
+inputs.faces=target.faces;
+inputs.nodes=target.nodes;
+pts=source.nodes;
+
+[distances,project_pts,outside]=fastPoint2TriMesh(inputs,pts,1);
+surf_distances=abs(distances);
 
 haus_distance=getHausdorffDistance(source.nodes,target.nodes);
 figure()
+cdfplot(surf_distances)
+hold on
 cdfplot(haus_distance)
+legend({'Surface Project Distance','Hausdorff Distance'});
+
+
+edge_angles=getAllEdgeAngles(source.faces,source.nodes);
+geom_temp.faces=source.faces;
+geom_temp.vertices=source.nodes;
+aspects=zeros(size(geom_temp.faces,1),1);
+skewness=zeros(size(geom_temp.faces,1),1);
+for count_face=1:size(geom_temp.faces,1)
+    nodel=geom_temp.faces(count_face,:);
+    face_nodes=geom_temp.vertices(nodel,:);
+    [skewness(count_face),aspects(count_face)]=getMeshQuality2(face_nodes,1);
+    
+end
+
+node_dist_travel=vecnorm(source.nodes-source.nodes_affine,2,2);
+
+
+save([results_path,'Morph_Similarity.mat'],'surf_distances','haus_distance',...
+    'skewness','aspects','edge_angles','node_dist_travel')
+
+%% plot net deformation
+
+
+figure()
+patch('Faces',source.faces,'Vertices',source.nodes,'EdgeAlpha',.6,'FaceVertexCData',surf_distances,'FaceColor','interp');
+c=jet(1000);
+colormap(c(125:875,:));
+colorbar
+caxis([0,10]);
+axis off
+view ([1,-1,1])
+axis equal
+
+bone_color=[0.992156863212585,0.917647063732147,0.796078443527222];
+figure()
+patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','interp');
+c=jet(1000);
+colormap(c(125:875,:));
+colorbar
+caxis([0,10]);
+axis off
+view ([1,-1,1])
+axis equal
+
+
+%% final motion figure
+figure()
+patch('Faces',source.faces,'Vertices',source.nodes,'FaceVertexCData',node_dist_travel,'FaceColor','interp','EdgeAlpha',.3);
+c=jet(1000);
+colormap(c(125:875,:));
+colorbar
+caxis([0,25]);
+axis off
+view ([0,1,0])
+axis equal
+
+
+
+%% final motion figure
+figure()
+patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',bone_color,'EdgeAlpha',.3);
+axis off
+view ([0,1,0])
+axis equal
+
+
+figure()
+patch('Faces',source.faces,'Vertices',source.nodes_affine,'FaceColor',bone_color,'EdgeAlpha',.3);
+axis off
+view ([0,1,0])
+axis equal
+
+figure()
+patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor',bone_color,'EdgeAlpha',.3);
+axis off
+view ([0,1,0])
+axis equal
