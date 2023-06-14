@@ -6,13 +6,7 @@ function [source_nodes_fit]= pointCloudMorph_v4(target_nodes,source_nodes,params
     end
     max_iterations=params.max_iterations;
     want_plot=params.want_plot;
-    beta=params.beta;
     scale=params.scale;
-    dist_threshold=params.dist_threshold;
-    dist_threshold_scale=params.dist_threshold_scale;
-    scale_scale=params.scale_scale;
-    knots_scale=params.knots_scale;
-    beta_scale=params.beta_scale;
     smooth=params.smooth;
     normal_scale=params.normal_scale;
     smooth_decay=params.smooth_decay;
@@ -24,9 +18,7 @@ function [source_nodes_fit]= pointCloudMorph_v4(target_nodes,source_nodes,params
 
     %% main loop for mesh morphing
     counter=1;
-    max_knots=500;
-    switcher=1;
-%     target_scale
+    
 if use_normal==1
     vertex_normal_target=target_nodes;
     for count_node_target=1:size(target_nodes)

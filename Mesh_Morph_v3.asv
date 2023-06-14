@@ -4,13 +4,6 @@
 % 12/1/22
 
 
-
-
-
-%%
-%
-%
-%%____________________________CODE______________________________
 %% clearing
 clear
 close all
@@ -45,33 +38,23 @@ if convert_to_mm==1
     target.nodes=target.nodes*1000;
 end
 
-%% reduce target mesh
-[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.05);
-[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.05);
-
 %% perform initial rigid alignment
 Options.Registration='Rigid';
 
 source.nodes_orig=source.nodes;
-[source.nodes_reduce,M1]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
+[source.nodes,M1]=ICP_finite(target.nodes, source.nodes, Options);
 
 
+% Options.TolX=.0001;
+% Options.TolP=.0001;
 Options.Registration='Affine';
-[source.nodes_reduce,M2]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
-
+[source.nodes,M2]=ICP_finite(target.nodes, source.nodes, Options);
+source.nodes_affine=source.nodes;
 Affine_TransMat=M2*M1;
 
-
-source.nodes = transformPts(Affine_TransMat,source.nodes);
-source.nodes_affine=source.nodes;
-
-
-
-
-
-% % % %% reduce target mesh
-% % % [target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.05);
-% % % [source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.05);
+%% reduce target mesh
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.05);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.05);
 
 
 %% show scaled nodes
@@ -84,10 +67,16 @@ axis equal
 axis off
 
 %% morph large f
-params.max_iterations=10; %normally ~10
+params.max_iterations=10;
 params.want_plot=1;
+params.beta=-.99;
 params.scale=.95;
-params.smooth=10; % normally 10
+params.dist_threshold=25;
+params.dist_threshold_scale=.99;
+params.scale_scale=.9;
+params.knots_scale=1.1;
+params.beta_scale=.99;
+params.smooth=10;
 params.normal_scale=10;
 params.normal_scale_decay=.999;
 params.use_parallel=1;
@@ -106,10 +95,16 @@ patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
 source.nodes_deform=FV2.vertices;
 
 %% morph small f
-params.max_iterations=4; %normally ~4
+params.max_iterations=4;
 params.want_plot=1;
+params.beta=-.9;
 params.scale=.5;
-params.smooth=1; % normally 1
+params.dist_threshold=15;
+params.dist_threshold_scale=.99;
+params.scale_scale=.9;
+params.knots_scale=1.1;
+params.beta_scale=.99;
+params.smooth=1;
     
 [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_deform,params,target.faces_reduce,source.faces_reduce);
 
@@ -121,6 +116,13 @@ FV2=smoothpatch(smooth_mesh,0,30);
 patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
 
 source.nodes_deform=FV2.vertices;
+
+
+
+
+
+
+
 
 %% deform original mesh
 node_deform=source.nodes_deform-source.nodes_reduce;
@@ -160,10 +162,16 @@ source.nodes=source.nodes+new_deform';
 
 
 %% morph small f
-params.max_iterations=5; % normally 10-20
+params.max_iterations=20;
 params.want_plot=1;
+params.beta=-.9;
 params.scale=.5;
-params.smooth=10; % normally 10
+params.dist_threshold=15;
+params.dist_threshold_scale=.99;
+params.scale_scale=.9;
+params.knots_scale=1.1;
+params.beta_scale=.99;
+params.smooth=10;
 params.smooth_decay=.95;
     
 [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params,target.faces,source.faces);
