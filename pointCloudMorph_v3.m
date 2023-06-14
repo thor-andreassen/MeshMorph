@@ -66,7 +66,6 @@ vertex_normal_target=vertex_normal_target*normal_scale;
                 hold on
                 p2=plot3(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',1);
                 p3=plot3(target_nodes(:,1),target_nodes(:,2),target_nodes(:,3),'ro','MarkerSize',1);
-                
             else
                 p1.XData=source_nodes_0(:,1);
                 p1.YData=source_nodes_0(:,2);

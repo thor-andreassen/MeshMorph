@@ -125,20 +125,14 @@ end
 %                 axis equal
 %                 view([0,1,0])
 %                 disp('test')
-%                 
-%                 temp_deform=vecnorm(deform_vector',2,2);
-%                 patch_mesh=figure();
-%                 p6=patch('Faces',source_faces,'Vertices',source_nodes,'FaceVertexCData',temp_deform,'FaceColor','interp','EdgeAlpha',.3);
-%                 axis off
-%                 axis equal
-%                 view([0,1,0])
-%                 c=jet(1000);
-%                 colormap(c(125:875,:));
-%                 colorbar
-%                 caxis([0,max(temp_deform)]);
-%                 axis equal
-%                 disp('test')
                 
+                temp_deform=deform_vector';
+                patch_mesh=figure();
+                p6=patch(source_nodes(:,1),source_nodes(:,2),source_nodes(:,3),'bo','MarkerSize',1);
+                axis off
+                axis equal
+                view([0,1,0])
+                disp('test')
 
                 
                 

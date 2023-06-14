@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Femur\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
 results_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\ICP_Morph_Comparison\'];
 
 target_path=[stl_path,'Target Geom\'];
@@ -46,7 +46,7 @@ Affine_TransMat=M2*M1;
 %% reduce target mesh
 target_pc=pointCloud(target.nodes);
 source_pc=pointCloud(source.nodes);
-[tform,move_pc]=pcregistercpd(source_pc,target_pc,'MaxIterations',6);
+[tform,move_pc]=pcregistercpd(source_pc,target_pc,'MaxIterations',1,'SmoothingWeight',.1);
 source.nodes=move_pc.Location;
 
 time_total=toc(total_time)
@@ -83,3 +83,16 @@ node_dist_travel=vecnorm(source.nodes-source.nodes_affine,2,2);
 
 save([results_path,'CPD_Femur.mat'],'surf_distances','haus_distance',...
     'skewness','aspects','edge_angles','node_dist_travel')
+
+
+
+%% final motion figure
+figure()
+patch('Faces',source.faces,'Vertices',source.nodes,'FaceVertexCData',node_dist_travel,'FaceColor','interp','EdgeAlpha',.3);
+c=jet(1000);
+colormap(c(125:875,:));
+colorbar
+caxis([0,25]);
+axis off
+view ([0,1,0])
+axis equal
