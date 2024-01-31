@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\ICP_Morph_Comparison\Scapula STL Morphing\'];
 results_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\ICP_Morph_Comparison\'];
 
 target_path=[stl_path,'Target Geom\'];
@@ -28,20 +28,25 @@ files=dir([source_path,'*.stl']);
 % load('femur_test')
 
 
+%% reduce target mesh
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.05);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.05);
+
 %% perform initial rigid alignment
 Options.Registration='Rigid';
 
 source.nodes_orig=source.nodes;
-[source.nodes,M1]=ICP_finite(target.nodes, source.nodes, Options);
+[source.nodes_reduce,M1]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
 
-% Options.TolX=.0001;
-% Options.TolP=.0001;
 Options.Registration='Affine';
-[source.nodes,M2]=ICP_finite(target.nodes, source.nodes, Options);
-source.nodes_affine=source.nodes;
+[source.nodes_reduce,M2]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
 Affine_TransMat=M2*M1;
+
+
+source.nodes = transformPts(Affine_TransMat,source.nodes);
+source.nodes_affine=source.nodes;
 
 %% reduce target mesh
 target_pc=pointCloud(target.nodes);
@@ -81,7 +86,7 @@ end
 node_dist_travel=vecnorm(source.nodes-source.nodes_affine,2,2);
 
 
-save([results_path,'CPD_Femur.mat'],'surf_distances','haus_distance',...
+save([results_path,'CPD_Scapula.mat'],'surf_distances','haus_distance',...
     'skewness','aspects','edge_angles','node_dist_travel')
 
 
