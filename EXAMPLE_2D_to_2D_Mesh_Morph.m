@@ -57,13 +57,8 @@ files=dir([source_path,'*.stl']);
 % load('femur_test')
 
 %% reduce target mesh
-[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.15);
-[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.15);
-
-% target.faces_reduce=target.faces;
-% target.nodes_reduce=target.nodes;
-% source.faces_reduce=source.faces;
-% source.nodes_reduce=source.nodes;
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.05);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.05);
 
 %% perform initial rigid alignment
 target_pts=[125.231,97.5814,482.127;...
@@ -95,13 +90,6 @@ Affine_TransMat=M2*M1*M0;
 source.nodes = transformPts(Affine_TransMat,source.nodes);
 source.nodes_affine=source.nodes;
 
-
-
-
-
-% reduce target mesh
-% [target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.05);
-% [source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.05);
 
 
 %% show scaled nodes
@@ -160,38 +148,8 @@ model_orig=newgrnn(source.nodes_reduce',node_deform',10);
 new_deform=sim(model_orig,source.nodes');
 source.nodes=source.nodes+new_deform';
 
-%% plot deformations
-% figure()
-% temp_deform=new_deform';
-% vector_mesh=figure();
-% p6=plot3(source.nodes(:,1),source.nodes(:,2),source.nodes(:,3),'bo','MarkerSize',1);
-% hold on
-% q2=quiver3(source.nodes(:,1),source.nodes(:,2),source.nodes(:,3),...
-%     temp_deform(:,1),temp_deform(:,2),temp_deform(:,3),2.5,'k');
-% axis off
-% axis equal
-% view([0,1,0])
-% disp('test')
-
-
-% temp_deform=vecnorm(new_deform',2,2);
-% patch_mesh=figure();
-% p10=patch('Faces',source.faces,'Vertices',source.nodes,'FaceVertexCData',temp_deform,'FaceColor','interp','EdgeAlpha',.3);
-% axis off
-% axis equal
-% view([0,1,0])
-% c=jet(1000);
-% colormap(c(125:875,:));
-% colorbar
-% caxis([0,max(temp_deform)]);
-% axis equal
-% disp('test')
-
-
-
-
 %% morph small f
-params.max_iterations=20; % normally 10-20
+params.max_iterations=10; % normally 10-20
 params.want_plot=1;
 params.scale=.5;
 params.smooth=10; % normally 10
