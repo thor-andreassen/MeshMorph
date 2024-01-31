@@ -1,9 +1,13 @@
 %% Example code for 2D mesh Morphing and Prediction of sites
-% Written by Thor Andreassen
+% Written by Thor Andreassen, PhD
 % University of Denver
-% 12/1/22
+% Created 12/1/22
+% Last Edited 1/30/24
 
 
+% This is the main example script to create a morphing of a 2D mesh
+% geometry to another 2D mesh geometry. The morphing function is contained
+% in the pointCloudMorph_v4 function. 
 
 
 
@@ -16,16 +20,17 @@ clear
 close all
 clc
 
-%% load target mesh
+%% OVERALL PATHS
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\In Vivo Modeling\U01_S05\Morphing\TibFib\'];
-results_path=[stl_path,'Results\'];
+default_path=[pwd,'\Example 2D Structure\'];
+base_path=uigetdir(default_path);
+results_path=[base_path,'Results\'];
 
-target_path=[stl_path,'Target Geom\'];
-source_path=[stl_path,'Source Geom\'];
-site_path=[stl_path,'Site Geom\'];
-landmark_path=[stl_path,'Landmarks\'];
+target_path=[base_path,'Target Geom\'];
+source_path=[base_path,'Source Geom\'];
+site_path=[base_path,'Site Geom\'];
+landmark_path=[base_path,'Landmarks\'];
 convert_to_mm=0;
 use_known_align=0;
 
@@ -111,7 +116,7 @@ params.normal_scale=5;
 params.normal_scale_decay=.999;
 params.use_parallel=1;
 params.smooth_decay=1;
-    
+
 [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
 % [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params);
 
@@ -122,7 +127,7 @@ params.smooth_decay=1;
 % smooth_mesh.faces=source.faces_reduce;
 % FV2=smoothpatch(smooth_mesh,0,30);
 % patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
-% 
+%
 % source.nodes_deform=FV2.vertices;
 
 %% morph small f
@@ -130,7 +135,7 @@ params.max_iterations=4; %normally ~4
 params.want_plot=1;
 params.scale=.5;
 params.smooth=1; % normally 1
-    
+
 [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_deform,params,target.faces_reduce,source.faces_reduce);
 
 %% smooth mesh
@@ -139,7 +144,7 @@ params.smooth=1; % normally 1
 % smooth_mesh.faces=source.faces_reduce;
 % FV2=smoothpatch(smooth_mesh,0,30);
 % patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
-% 
+%
 % source.nodes_deform=FV2.vertices;
 
 %% deform original mesh
@@ -185,7 +190,7 @@ params.want_plot=1;
 params.scale=.5;
 params.smooth=10; % normally 10
 params.smooth_decay=.95;
-    
+
 [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params,target.faces,source.faces);
 % [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params);
 time_total=toc(total_time)
@@ -193,11 +198,11 @@ time_total=toc(total_time)
 % figure();
 % smooth_mesh.vertices=source.nodes;
 % smooth_mesh.faces=source.faces;
-% 
-% 
+%
+%
 % [smooth_mesh.vertices]=improveTriMeshQuality(smooth_mesh.faces,smooth_mesh.vertices,2,2,.01);
 % patch('Faces',smooth_mesh.faces,'Vertices',smooth_mesh.vertices,'FaceColor','r','EdgeAlpha',.3);
-% 
+%
 % source.nodes=smooth_mesh.vertices;
 
 
@@ -207,7 +212,7 @@ time_total=toc(total_time)
 % smooth_mesh.faces=source.faces;
 % FV2=smoothpatch(smooth_mesh,0,1);
 % patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
-% 
+%
 % source.nodes=FV2.vertices;
 
 
@@ -228,18 +233,18 @@ time_total=toc(total_time)
 % % % params.beta_scale=.99;
 % % % params.smooth=5;
 % % % params.normal_scale=1;
-% % %     
+% % %
 % % % [source.nodes]= pointCloudMorph_v3(target.nodes,source.nodes,params,target.faces,source.faces);
 
 % % % %% smooth mesh
 % % % figure();
 % % % smooth_mesh.vertices=source.nodes;
 % % % smooth_mesh.faces=source.faces;
-% % % 
-% % % 
+% % %
+% % %
 % % % [smooth_mesh.vertices]=improveTriMeshQuality(smooth_mesh.faces,smooth_mesh.vertices,2,1,.01);
 % % % patch('Faces',smooth_mesh.faces,'Vertices',smooth_mesh.vertices,'FaceColor','r','EdgeAlpha',.3);
-% % % 
+% % %
 % % % source.nodes=smooth_mesh.vertices;
 
 
@@ -315,14 +320,9 @@ files=dir([landmark_path,'*.xlsx']);
 % landmark.orig=csvread([landmark_path,files(1).name]);
 temp_node=readtable([landmark_path,files(1).name]);
 landmark.orig=table2array(temp_node(:,1:3));
-if convert_to_mm==1
-    landmark.orig=landmark.orig*1000;
-    landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
-    landmark.orig=landmark.orig/1000;
-    landmark.deform=landmark.deform/1000;
-else
-    landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
-end
+
+landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
+
 new_table=temp_node;
 new_table{:,1:3}=landmark.deform;
 % new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
@@ -330,16 +330,6 @@ writetable(new_table,[results_path,files(1).name])
 % csvwrite([results_path,files(1).name],landmark.deform);
 
 %% save morphing data
-if convert_to_mm==1
-    target.nodes=target.nodes/1000;
-    source.nodes_orig=source.nodes_orig/1000;
-    source.nodes=source.nodes/1000;
-    source.nodes_change=source.nodes_change/1000;
-    source.nodes_deform=source.nodes_deform/1000;
-    source.nodes_reduce=source.nodes_reduce/1000;
-    source.nodes_affine=source.nodes_affine/1000;
-end
-
 morph_fig=figure()
 subplot(1,2,2)
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
@@ -362,15 +352,15 @@ for count_site=1:length(files)
     subplot(1,2,1)
     hold on
     p_site_orig{count_site}=patch('Faces',site.faces,'Vertices',site.nodes,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
-
+    
     
     site.nodes_deform=applyMorphToNodes(site.nodes,Affine_TransMat,model_final);
-%     temp_nodes=[site.nodes,ones(size(site.nodes,1),1)];
-%     affine_nodes=[Affine_TransMat*temp_nodes']';
-%     site.nodes_deform=affine_nodes(:,1:3);
-%     
-%     new_deform=sim(model_final,site.nodes_deform');
-%     site.nodes_deform=site.nodes_deform+new_deform';
+    %     temp_nodes=[site.nodes,ones(size(site.nodes,1),1)];
+    %     affine_nodes=[Affine_TransMat*temp_nodes']';
+    %     site.nodes_deform=affine_nodes(:,1:3);
+    %
+    %     new_deform=sim(model_final,site.nodes_deform');
+    %     site.nodes_deform=site.nodes_deform+new_deform';
     new_geom.faces=site.faces;
     new_geom.vertices=site.nodes_deform;
     subplot(1,2,2)
