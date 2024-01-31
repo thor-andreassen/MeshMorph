@@ -25,14 +25,26 @@ total_time=tic;
 
 default_path=[pwd,'\Example 2D Structure\'];
 base_path=uigetdir(default_path);
-results_path=[base_path,'Results\'];
 
+%% check valid filepath
+if base_path==0
+    error('Choose a Valid path location');
+elseif base_path(end)~='\'
+    base_path=[base_path,'\'];
+end
+
+%% Create Storage Paths
+results_path=[base_path,'Results\'];
 target_path=[base_path,'Target Geom\'];
 source_path=[base_path,'Source Geom\'];
 site_path=[base_path,'Site Geom\'];
 landmark_path=[base_path,'Landmarks\'];
-convert_to_mm=0;
+
+
+
 use_known_align=0;
+
+
 
 %% load target geometries
 files=dir([target_path,'*.stl']);
@@ -44,16 +56,9 @@ files=dir([source_path,'*.stl']);
 [source.faces,source.nodes]=stlRead2([source_path,files(1).name]);
 % load('femur_test')
 
-
-%% scale geom
-if convert_to_mm==1
-    source.nodes=source.nodes*1000;
-    target.nodes=target.nodes*1000;
-end
-
 %% reduce target mesh
-[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.25);
-[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.25);
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.15);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.15);
 
 % target.faces_reduce=target.faces;
 % target.nodes_reduce=target.nodes;
@@ -75,6 +80,7 @@ else
 end
 source.nodes_reduce = transformPts(M0,source.nodes_reduce);
 Options.Registration='Rigid';
+Options.TolX=.001;
 
 source.nodes_orig=source.nodes;
 [source.nodes_reduce,M1]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
@@ -316,18 +322,17 @@ close(v);
 %% load landmarks
 
 
-files=dir([landmark_path,'*.xlsx']);
+files=dir([landmark_path,'*.csv']);
 % landmark.orig=csvread([landmark_path,files(1).name]);
 temp_node=readtable([landmark_path,files(1).name]);
-landmark.orig=table2array(temp_node(:,1:3));
+landmark.orig=table2array(temp_node(:,2:4));
 
 landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
 
 new_table=temp_node;
-new_table{:,1:3}=landmark.deform;
-% new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
+new_table{:,2:4}=landmark.deform;
+new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
 writetable(new_table,[results_path,files(1).name])
-% csvwrite([results_path,files(1).name],landmark.deform);
 
 %% save morphing data
 morph_fig=figure()
