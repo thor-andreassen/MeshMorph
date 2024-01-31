@@ -7,7 +7,7 @@ clc
 result_path='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\ICP_Morph_Comparison\';
 
 
-load([result_path,'RBF_Femur.mat']);
+load([result_path,'RBF_Scapula.mat']);
 RBF_surf_distance=surf_distances;
 RBF_haus_distance=haus_distance;
 RBF_aspect=aspects;
@@ -15,7 +15,7 @@ RBF_edge_angle=edge_angles;
 RBF_node_dist=node_dist_travel;
 
 %% load RBF values
-load([result_path,'ICP_Femur.mat']);
+load([result_path,'ICP_Scapula.mat']);
 ICP_surf_distance=surf_distances;
 ICP_haus_distance=haus_distance;
 ICP_aspect=aspects;
@@ -23,7 +23,7 @@ ICP_edge_angle=edge_angles;
 ICP_node_dist=node_dist_travel;
 
 %% load RBF values
-load([result_path,'CPD_Femur.mat']);
+load([result_path,'CPD_Scapula.mat']);
 CPD_surf_distance=surf_distances;
 CPD_haus_distance=haus_distance;
 CPD_aspect=aspects;

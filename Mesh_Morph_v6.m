@@ -19,7 +19,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\In Vivo Modeling\U01_S05\Morphing\Quad\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\In Vivo Modeling\U01_S05\Morphing\TibFib\'];
 results_path=[stl_path,'Results\'];
 
 target_path=[stl_path,'Target Geom\'];
@@ -27,7 +27,7 @@ source_path=[stl_path,'Source Geom\'];
 site_path=[stl_path,'Site Geom\'];
 landmark_path=[stl_path,'Landmarks\'];
 convert_to_mm=0;
-use_known_align=1;
+use_known_align=0;
 
 %% load target geometries
 files=dir([target_path,'*.stl']);
@@ -107,23 +107,23 @@ params.max_iterations=10; %normally ~10
 params.want_plot=1;
 params.scale=.95;
 params.smooth=10; % normally 10
-params.normal_scale=1;
+params.normal_scale=5;
 params.normal_scale_decay=.999;
 params.use_parallel=1;
 params.smooth_decay=1;
     
-% [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
-[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params);
+[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
+% [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params);
 
 
 %% smooth mesh
-figure();
-smooth_mesh.vertices=source.nodes_deform;
-smooth_mesh.faces=source.faces_reduce;
-FV2=smoothpatch(smooth_mesh,0,30);
-patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
-
-source.nodes_deform=FV2.vertices;
+% figure();
+% smooth_mesh.vertices=source.nodes_deform;
+% smooth_mesh.faces=source.faces_reduce;
+% FV2=smoothpatch(smooth_mesh,0,30);
+% patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
+% 
+% source.nodes_deform=FV2.vertices;
 
 %% morph small f
 params.max_iterations=4; %normally ~4
@@ -134,13 +134,13 @@ params.smooth=1; % normally 1
 [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_deform,params,target.faces_reduce,source.faces_reduce);
 
 %% smooth mesh
-figure();
-smooth_mesh.vertices=source.nodes_deform;
-smooth_mesh.faces=source.faces_reduce;
-FV2=smoothpatch(smooth_mesh,0,30);
-patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
-
-source.nodes_deform=FV2.vertices;
+% figure();
+% smooth_mesh.vertices=source.nodes_deform;
+% smooth_mesh.faces=source.faces_reduce;
+% FV2=smoothpatch(smooth_mesh,0,30);
+% patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
+% 
+% source.nodes_deform=FV2.vertices;
 
 %% deform original mesh
 node_deform=source.nodes_deform-source.nodes_reduce;
@@ -180,13 +180,14 @@ source.nodes=source.nodes+new_deform';
 
 
 %% morph small f
-params.max_iterations=10; % normally 10-20
+params.max_iterations=20; % normally 10-20
 params.want_plot=1;
 params.scale=.5;
 params.smooth=10; % normally 10
 params.smooth_decay=.95;
     
 [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params,target.faces,source.faces);
+% [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params);
 time_total=toc(total_time)
 %% smooth mesh
 % figure();
@@ -201,13 +202,13 @@ time_total=toc(total_time)
 
 
 %% smooth
-figure();
-smooth_mesh.vertices=source.nodes;
-smooth_mesh.faces=source.faces;
-FV2=smoothpatch(smooth_mesh,0,1);
-patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
-
-source.nodes=FV2.vertices;
+% figure();
+% smooth_mesh.vertices=source.nodes;
+% smooth_mesh.faces=source.faces;
+% FV2=smoothpatch(smooth_mesh,0,1);
+% patch('Faces',FV2.faces,'Vertices',FV2.vertices,'FaceColor','r','EdgeAlpha',.3);
+% 
+% source.nodes=FV2.vertices;
 
 
 
@@ -298,7 +299,7 @@ pause(1);
 for count_frame=1:num_frames
     new_nodes=source.nodes_affine+(count_frame/num_frames)*source.nodes_change;
     source_geom_morph.Vertices=new_nodes;
-    view([1,0,0]);
+    view([1,1,0]);
     frame_val=getframe(fig_anim);
     writeVideo(v,frame_val);
     pause(.01)
@@ -310,7 +311,7 @@ close(v);
 %% load landmarks
 
 
-files=dir([landmark_path,'*.csv']);
+files=dir([landmark_path,'*.xlsx']);
 % landmark.orig=csvread([landmark_path,files(1).name]);
 temp_node=readtable([landmark_path,files(1).name]);
 landmark.orig=table2array(temp_node(:,1:3));

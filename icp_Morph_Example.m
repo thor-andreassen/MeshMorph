@@ -8,7 +8,7 @@ clc
 %% load target mesh
 total_time=tic;
 
-stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\S193761_Morph_bones\Tibia\'];
+stl_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\ICP_Morph_Comparison\Scapula STL Morphing\'];
 results_path=['C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\Iterative Alignment Check\MeshMorph\ICP_Morph_Comparison\'];
 
 target_path=[stl_path,'Target Geom\'];
@@ -33,23 +33,29 @@ if convert_to_mm==1
     target.nodes=target.nodes*1000;
 end
 
+%% reduce target mesh
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.25);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.25);
+
 %% perform initial rigid alignment
 Options.Registration='Rigid';
 
 source.nodes_orig=source.nodes;
-[source.nodes,M1]=ICP_finite(target.nodes, source.nodes, Options);
+[source.nodes_reduce,M1]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
 
-% Options.TolX=.0001;
-% Options.TolP=.0001;
 Options.Registration='Affine';
-[source.nodes,M2]=ICP_finite(target.nodes, source.nodes, Options);
-source.nodes_affine=source.nodes;
+[source.nodes_reduce,M2]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
 Affine_TransMat=M2*M1;
 
+
+source.nodes = transformPts(Affine_TransMat,source.nodes);
+source.nodes_affine=source.nodes;
+
+
 %% reduce target mesh
-[registered,targetV,targetF]=nonrigidICPv1(target.nodes,source.nodes,target.faces,source.faces,54,1);
+[registered,targetV,targetF]=nonrigidICPv1(target.nodes,source.nodes,target.faces,source.faces,45,1);
 
 source.nodes=registered;
 time_total=toc(total_time)
@@ -84,7 +90,7 @@ end
 node_dist_travel=vecnorm(source.nodes-source.nodes_affine,2,2);
 
 
-save([results_path,'ICP_Femur.mat'],'surf_distances','haus_distance',...
+save([results_path,'ICP_Scapula.mat'],'surf_distances','haus_distance',...
     'skewness','aspects','edge_angles','node_dist_travel')
 
 
