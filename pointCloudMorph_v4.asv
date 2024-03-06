@@ -54,20 +54,16 @@ function [source_nodes_fit]= pointCloudMorph_v4(target_nodes,source_nodes,params
                 % params.smooth (X > 0) - Default = 10
                     % This is the value that controls the amount of
                     % smoothing applied to the GRNN to allow for smooth
-                    % contours of the moprphing. This parameter is the most
-                    % important one to test to create good results. A greater
+                    % contours of the moprphing. A greater
                     % number applies a larger smoothing and will usually
                     % require more iterations to complete (Useful for morphing
                     % gross anatomy). A smaller value will apply
                     % less smoothing (useful for ensuring morphing of small
-                    % localized details). T Values between 1
+                    % localized details). This parameter is the most important
+                    % one to test to create good results. Values between 1
                     % and 100 work reasonably well for biomechanical
                     % structures of the human body as meshes in mm.
-                    % Approximate values for the smoothing can be obtained
-                    % as the approximate size between the features that are
-                    % currently desired to be morphed.
-                % params.scale (0 < X < 1) - Default = 0.5
-                    %
+                    % Approximat
 
                 % params.relative_gap_weight (0 <= x <= 1) - Default = 0.5
                         % 1 = fixed geom 1 moving geom 2.
@@ -132,7 +128,6 @@ function [source_nodes_fit]= pointCloudMorph_v4(target_nodes,source_nodes,params
     params=setDefaultParamValue(params,'max_iterations',20);
     params=setDefaultParamValue(params,'want_plot',1);
     params=setDefaultParamValue(params,'smooth',10);
-    params=setDefaultParamValue(params,'scale',0.5);
 
     use_parallel=params.use_parallel;
     max_iterations=params.max_iterations;

@@ -3,6 +3,9 @@
 % University of Denver
 % 12/1/22
 
+% Edited by Thor E. Andreassen, PhD
+% 3/5/24
+
 
 
 
@@ -26,7 +29,6 @@ target_path=[stl_path,'Target Geom\'];
 source_path=[stl_path,'Source Geom\'];
 site_path=[stl_path,'Site Geom\'];
 landmark_path=[stl_path,'Landmarks\'];
-convert_to_mm=0;
 use_known_align=0;
 
 %% load target geometries
@@ -38,13 +40,6 @@ files=dir([target_path,'*.stl']);
 files=dir([source_path,'*.stl']);
 [source.faces,source.nodes]=stlRead2([source_path,files(1).name]);
 % load('femur_test')
-
-
-%% scale geom
-if convert_to_mm==1
-    source.nodes=source.nodes*1000;
-    target.nodes=target.nodes*1000;
-end
 
 %% reduce target mesh
 [target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.25);
@@ -315,14 +310,7 @@ files=dir([landmark_path,'*.xlsx']);
 % landmark.orig=csvread([landmark_path,files(1).name]);
 temp_node=readtable([landmark_path,files(1).name]);
 landmark.orig=table2array(temp_node(:,1:3));
-if convert_to_mm==1
-    landmark.orig=landmark.orig*1000;
     landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
-    landmark.orig=landmark.orig/1000;
-    landmark.deform=landmark.deform/1000;
-else
-    landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
-end
 new_table=temp_node;
 new_table{:,1:3}=landmark.deform;
 % new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
@@ -330,16 +318,6 @@ writetable(new_table,[results_path,files(1).name])
 % csvwrite([results_path,files(1).name],landmark.deform);
 
 %% save morphing data
-if convert_to_mm==1
-    target.nodes=target.nodes/1000;
-    source.nodes_orig=source.nodes_orig/1000;
-    source.nodes=source.nodes/1000;
-    source.nodes_change=source.nodes_change/1000;
-    source.nodes_deform=source.nodes_deform/1000;
-    source.nodes_reduce=source.nodes_reduce/1000;
-    source.nodes_affine=source.nodes_affine/1000;
-end
-
 morph_fig=figure()
 subplot(1,2,2)
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
