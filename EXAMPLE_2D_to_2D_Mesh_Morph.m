@@ -57,8 +57,8 @@ files=dir([source_path,'*.stl']);
 % load('femur_test')
 
 %% reduce target mesh
-[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.05);
-[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.05);
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.15);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.15);
 
 %% perform initial rigid alignment
 target_pts=[125.231,97.5814,482.127;...
