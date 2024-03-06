@@ -79,14 +79,14 @@ Options.TolX=.001;
 
 source.nodes_orig=source.nodes;
 [source.nodes_reduce,M1]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
-
+source.nodes_orig_rigid_align=source.nodes_reduce;
 
 Options.Registration='Affine';
 [source.nodes_reduce,M2]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
 Affine_TransMat=M2*M1*M0;
 
-source.nodes_orig_rigid_align=transformPts(M1*M0,source.nodes);
+
 source.nodes = transformPts(Affine_TransMat,source.nodes);
 source.nodes_affine=source.nodes;
 
@@ -199,7 +199,7 @@ axis equal
 
 source.nodes_change=source.nodes-source.nodes_affine;
 source.nodes_change_affine=source.nodes_affine-source.nodes_orig_rigid_align;
-source.nodes_change_total=source.nodes-source.nodes_orig_rigid_align;
+source.nodes_change_affine=source.nodes_affine-source.nodes_orig_rigid_align;
 %% final deformation model
 model_final=newgrnn(source.nodes_affine',source.nodes_change',1);
 
@@ -213,8 +213,8 @@ open(v);
 fig_anim=figure('units','normalized','outerposition',[0 0 1 1]);
 num_frames=100;
 
-col=vecnorm(source.nodes_change_total,2,2);
-source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_orig_rigid_align,'EdgeAlpha',.6,'FaceVertexCData',col,'FaceColor','interp');
+col=vecnorm(source.nodes_change,2,2);
+source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_affine,'EdgeAlpha',.6,'FaceVertexCData',col,'FaceColor','interp');
 
 colorbar
 colormap jet
@@ -226,7 +226,7 @@ axis off
 pause(1);
 
 for count_frame=1:num_frames
-    new_nodes=source.nodes_orig_rigid_align+(count_frame/num_frames)*source.nodes_change_total;
+    new_nodes=source.nodes_affine+(count_frame/num_frames)*source.nodes_change;
     source_geom_morph.Vertices=new_nodes;
     view([1,1,0]);
     frame_val=getframe(fig_anim);
