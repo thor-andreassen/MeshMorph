@@ -185,21 +185,6 @@ try
     saveas(final_overlap_fig,[results_path,'Images\','Overlap_Final_Figure.fig']);
 end
 
-%% Plotting - plot net change
-figure();
-source_geom_orig=patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','b','EdgeAlpha',.2);
-hold on
-source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes_affine,'FaceColor','g','EdgeAlpha',.2);
-% segments=createLineSegments(source.nodes_affine,source.nodes);
-% plot3(segments(:,1),segments(:,2),segments(:,3),'k','LineWidth',5);
-
-%% Plotting - Plot final geometries
-figure()
-target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.5,'FaceAlpha',.9);
-hold on
-source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','b','EdgeAlpha',.5,'FaceAlpha',.9);
-axis equal
-
 
 %% Step 8 - determine net motion for final morphing solution
 
