@@ -7,7 +7,7 @@
 
 % This is the main example script to create a morphing of a 2D mesh
 % geometry to another 2D mesh geometry. The morphing function is contained
-% in the pointCloudMorph_v4 function. 
+% in the pointCloudMorph_v4 function.
 
 
 
@@ -214,11 +214,13 @@ fig_anim=figure('units','normalized','outerposition',[0 0 1 1]);
 num_frames=100;
 
 col=vecnorm(source.nodes_change_total,2,2);
-source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_orig_rigid_align,'EdgeAlpha',.6,'FaceVertexCData',col,'FaceColor','interp');
+original_geom=patch('Faces',source.faces,'Vertices',source.nodes_orig_rigid_align,'EdgeAlpha',.15,'FaceColor','k','FaceAlpha',.2);
+hold on
+source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_orig_rigid_align,'EdgeAlpha',.15,'FaceVertexCData',zeros(size(col)),'FaceColor','interp');
 
 colorbar
 colormap jet
-
+caxis([0,max(col)]);
 view([1,0,0]);
 
 axis equal
@@ -228,12 +230,14 @@ pause(1);
 for count_frame=1:num_frames
     new_nodes=source.nodes_orig_rigid_align+(count_frame/num_frames)*source.nodes_change_total;
     source_geom_morph.Vertices=new_nodes;
+    source_geom_morph.FaceVertexCData=col*(count_frame/num_frames);
     view([1,1,0]);
+    
     frame_val=getframe(fig_anim);
     writeVideo(v,frame_val);
     pause(.01)
-    
-    
+
+
 end
 close(v);
 
@@ -250,9 +254,10 @@ landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
 new_table=temp_node;
 new_table{:,2:4}=landmark.deform;
 new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
-writetable(new_table,[results_path,files(1).name])
+mkdir([results_path,'Landmarks\']);
+writetable(new_table,[results_path,'Landmarks\',files(1).name])
 
-%% save morphing data
+%% save SITE geometries
 morph_fig=figure()
 subplot(1,2,2)
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
@@ -270,52 +275,61 @@ plot3(landmark.orig(:,1),landmark.orig(:,2),landmark.orig(:,3),'kx','MarkerSize'
 
 files=dir([site_path,'*.stl']);
 colors=jet(length(files));
-for count_site=1:length(files)
-    [site.faces,site.nodes]=stlRead2([site_path,files(count_site).name]);
-    subplot(1,2,1)
-    hold on
-    p_site_orig{count_site}=patch('Faces',site.faces,'Vertices',site.nodes,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
-    
-    
-    site.nodes_deform=applyMorphToNodes(site.nodes,Affine_TransMat,model_final);
-    %     temp_nodes=[site.nodes,ones(size(site.nodes,1),1)];
-    %     affine_nodes=[Affine_TransMat*temp_nodes']';
-    %     site.nodes_deform=affine_nodes(:,1:3);
-    %
-    %     new_deform=sim(model_final,site.nodes_deform');
-    %     site.nodes_deform=site.nodes_deform+new_deform';
-    new_geom.faces=site.faces;
-    new_geom.vertices=site.nodes_deform;
-    subplot(1,2,2)
-    hold on
-    p_site_new{count_site}=patch('Faces',site.faces,'Vertices',site.nodes_deform,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
-    try
-        stlWrite2([results_path,files(count_site).name,'_Morph.stl'],site.faces,site.nodes_deform);
-    catch
-        stlwrite([results_path,files(count_site).name,'_Morph.stl'],new_geom);
+
+if ~isempty(files)
+    mkdir([results_path,'Site Geom\']);
+end
+try
+    for count_site=1:length(files)
+        [site.faces,site.nodes]=stlRead2([site_path,files(count_site).name]);
+        subplot(1,2,1)
+        hold on
+        p_site_orig{count_site}=patch('Faces',site.faces,'Vertices',site.nodes,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
+
+
+        site.nodes_deform=applyMorphToNodes(site.nodes,Affine_TransMat,model_final);
+        new_geom.faces=site.faces;
+        new_geom.vertices=site.nodes_deform;
+        subplot(1,2,2)
+        hold on
+        p_site_new{count_site}=patch('Faces',site.faces,'Vertices',site.nodes_deform,'FaceColor',colors(count_site,:),'EdgeAlpha',.3);
+
+        [~,old_site_name,~]= fileparts([site_path,files(count_site).name]);
+        new_site_name=[old_site_name,'_Morph.stl'];
+
+
+        try
+            stlWrite2([[results_path,'Site Geom\'],new_site_name],site.faces,site.nodes_deform);
+        catch
+            stlwrite([[results_path,'Site Geom\'],new_site_name],new_geom);
+        end
     end
 end
 
-saveas(morph_fig,[results_path,'Morph_Figure.png']);
-saveas(morph_fig,[results_path,'Morph_Figure.fig']);
+mkdir([results_path,'Images\']);
+try
+    saveas(morph_fig,[results_path,'Images\','Morph_Figure.png']);
+    saveas(morph_fig,[results_path,'Images\','Morph_Figure.fig']);
+end
 %% save morphing meshes
 files=dir([target_path,'*.stl']);
 target_filename=files(1).name;
+
+
+[~,old_target_name,~]= fileparts([target_path,target_filename]);
+new_morphed_name=[old_target_name,'_Morph.stl'];
+mkdir([results_path,'Morphed Geometry\']);
 try
-    stlWrite2([results_path,target_filename,'_Morph.stl'],source.faces,source.nodes);
+    stlWrite2([results_path,'Morphed Geometry\',new_morphed_name],source.faces,source.nodes);
 catch
     new_geom.faces=source.faces;
     new_geom.vertices=source.nodes;
-    stlwrite([results_path,target_filename,'_Morph.stl'],new_geom);
+    stlwrite([results_path,'Morphed Geometry\',new_morphed_name],new_geom);
 end
 
 
 save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target',...
-    'model_final','landmark');
-
-
-%% save final mesh
-% stlWrite2([stl_path,target_geom_path,'_morph.stl'],source.faces,source.nodes_deform);
+    'model_final','landmark','M2','M1','M0');
 
 %% computer similarity metrics
 
@@ -323,48 +337,63 @@ inputs.faces=target.faces;
 inputs.nodes=target.nodes;
 pts=source.nodes;
 
-[distances,project_pts,outside]=fastPoint2TriMesh(inputs,pts,1);
-surf_distances=abs(distances);
-
-haus_distance=getHausdorffDistance(source.nodes,target.nodes);
-figure()
-cdfplot(surf_distances)
-hold on
-cdfplot(haus_distance)
-legend({'Surface Project Distance','Hausdorff Distance'});
-
-
-edge_angles=getAllEdgeAngles(source.faces,source.nodes);
-geom_temp.faces=source.faces;
-geom_temp.vertices=source.nodes;
-aspects=zeros(size(geom_temp.faces,1),1);
-skewness=zeros(size(geom_temp.faces,1),1);
-for count_face=1:size(geom_temp.faces,1)
-    nodel=geom_temp.faces(count_face,:);
-    face_nodes=geom_temp.vertices(nodel,:);
-    [skewness(count_face),aspects(count_face)]=getMeshQuality2(face_nodes,1);
-    
+try
+    [distances,project_pts,outside]=fastPoint2TriMesh(inputs,pts,1);
+    metrics.surf_distances=abs(distances);
 end
 
-node_dist_travel=vecnorm(source.nodes-source.nodes_affine,2,2);
+try
+    metrics.haus_distance=getHausdorffDistance(source.nodes,target.nodes);
+end
+try
+    figure()
+    cdfplot(metrics.surf_distances)
+    hold on
+    cdfplot(haus_distance)
+    legend({'Surface Project Distance','Hausdorff Distance'});
+end
 
+try
+    metrics.edge_angles=getAllEdgeAngles(source.faces,source.nodes);
+end
 
-save([results_path,'Morph_Similarity.mat'],'surf_distances','haus_distance',...
-    'skewness','aspects','edge_angles','node_dist_travel')
+try
+    geom_temp.faces=source.faces;
+    geom_temp.vertices=source.nodes;
+    metrics.aspects=zeros(size(geom_temp.faces,1),1);
+    metrics.skewness=zeros(size(geom_temp.faces,1),1);
+    for count_face=1:size(geom_temp.faces,1)
+        nodel=geom_temp.faces(count_face,:);
+        face_nodes=geom_temp.vertices(nodel,:);
+        [metrics.skewness(count_face),metrics.aspects(count_face)]=getMeshQuality2(face_nodes,1);
 
-%% plot net deformation
+    end
+end
 
+try
+    metrics.node_dist_travel_rig_to_aff=vecnorm(source.nodes_change_affine,2,2);
+    metrics.node_dist_travel_GRNN=vecnorm(source.nodes_change,2,2);
+    metrics.node_dist_travel_total=vecnorm(source.nodes_change_total,2,2);
+end
+save([results_path,'Morph_Similarity.mat'],'metrics');
 
-figure()
-patch('Faces',source.faces,'Vertices',source.nodes,'EdgeAlpha',.6,'FaceVertexCData',surf_distances,'FaceColor','interp');
-c=jet(1000);
-colormap(c(125:875,:));
-colorbar
-caxis([0,10]);
-axis off
-view ([1,-1,1])
-axis equal
+%% plot Net Accuracy of Morphing
 
+try
+    net_surf_figure=figure();
+    patch('Faces',source.faces,'Vertices',source.nodes,'EdgeAlpha',.6,'FaceVertexCData',metrics.surf_distances,'FaceColor','interp','EdgeAlpha',.3);
+    c=jet(1000);
+    colormap(c(125:875,:));
+    colorbar
+    caxis([0,max(metrics.surf_distances)]);
+    axis off
+    view ([1,-1,1])
+    axis equal
+    saveas(net_surf_figure,[results_path,'Images\','Surf_Distance_Figure.png']);
+    saveas(net_surf_figure,[results_path,'Images\','Surf_Distance_Figure.fig']);
+end
+
+%% plot final bone position
 figure()
 bone_color=[0.992156863212585,0.917647063732147,0.796078443527222];
 patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor',bone_color);
@@ -373,35 +402,70 @@ view ([1,-1,1])
 axis equal
 
 
-%% final motion figure
-figure()
-patch('Faces',source.faces,'Vertices',source.nodes,'FaceVertexCData',node_dist_travel,'FaceColor','interp','EdgeAlpha',.3);
-c=jet(1000);
-colormap(c(125:875,:));
-colorbar
-caxis([0,25]);
-axis off
-view ([0,1,0])
-axis equal
-
 
 
 %% final motion figure
-figure()
-patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',bone_color,'EdgeAlpha',.3);
-axis off
-view ([0,1,0])
-axis equal
+try
+    morphed_color_fig=figure();
+    subplot(1,3,1);
+    patch('Faces',source.faces,'Vertices',source.nodes_affine,'FaceVertexCData',metrics.node_dist_travel_rig_to_aff,'FaceColor','interp','EdgeAlpha',.3);
+    c=jet(1000);
+    colormap(c(125:875,:));
+    colorbar
+    caxis([0,max(metrics.node_dist_travel_rig_to_aff)]);
+    axis off
+    view ([0,1,0])
+    axis equal
+    title('Bone after Affine Transformation')
 
+    subplot(1,3,3);
+    patch('Faces',source.faces,'Vertices',source.nodes,'FaceVertexCData',metrics.node_dist_travel_GRNN,'FaceColor','interp','EdgeAlpha',.3);
+    c=jet(1000);
+    colormap(c(125:875,:));
+    colorbar
+    caxis([0,max(metrics.node_dist_travel_GRNN)]);
+    axis off
+    view ([0,1,0])
+    axis equal
+    title('GRNN Morph')
 
-figure()
-patch('Faces',source.faces,'Vertices',source.nodes_affine,'FaceColor',bone_color,'EdgeAlpha',.3);
-axis off
-view ([0,1,0])
-axis equal
+    subplot(1,3,3);
+    patch('Faces',source.faces,'Vertices',source.nodes,'FaceVertexCData',metrics.node_dist_travel_total,'FaceColor','interp','EdgeAlpha',.3);
+    c=jet(1000);
+    colormap(c(125:875,:));
+    colorbar
+    caxis([0,max(metrics.node_dist_travel_total)]);
+    axis off
+    view ([0,1,0])
+    axis equal
+    title('Complete Morphed Source')
+    saveas(morphed_color_fig,[results_path,'Images\','Morphed_Contour_Figure.png']);
+    saveas(morphed_color_fig,[results_path,'Images\','Morphed_Contour_Figure.fig']);
+end
 
-figure()
-patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor',bone_color,'EdgeAlpha',.3);
-axis off
-view ([0,1,0])
-axis equal
+%% final motion figure
+try
+    final_bone_fig=figure();
+    subplot(1,3,1)
+    patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',bone_color,'EdgeAlpha',.3);
+    axis off
+    view ([0,1,0])
+    axis equal
+    title('Target Mesh');
+
+    subplot(1,3,2)
+    patch('Faces',source.faces,'Vertices',source.nodes_affine,'FaceColor',bone_color,'EdgeAlpha',.3);
+    axis off
+    view ([0,1,0])
+    axis equal
+    title ('Source Mesh after Affine')
+
+    subplot(1,3,3)
+    patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor',bone_color,'EdgeAlpha',.3);
+    axis off
+    view ([0,1,0])
+    axis equal
+    title('Morphed Source Mesh')
+    saveas(final_bone_fig,[results_path,'Images\','Final_Geometries_Figure.png']);
+    saveas(final_bone_fig,[results_path,'Images\','Final_Geometries_Figure.fig']);
+end

@@ -33,7 +33,7 @@ function [source_nodes]= pointCloudMorph_v4(target_nodes,source_nodes,params,tar
 
     % the params input is a structure of configuration controls to define
     % the method by which the overclosure adjustment occurs.
-        % params.use_parallel_loops (0 or 1) - Default = 0
+        % params.use_parallel (0 or 1) - Default = 0
             % A binary value used to determine if the algorithm
             % will use parallel computing for calculation of the
             % GRNN and the overclosure distances, or if only a
@@ -125,7 +125,7 @@ function [source_nodes]= pointCloudMorph_v4(target_nodes,source_nodes,params,tar
     
     % the following lines are used to set the defualt values for the
     % parameters, in the event they were not provided by the user.
-    params=setDefaultParamValue(params,'use_parallel_loops',0);
+    params=setDefaultParamValue(params,'use_parallel',0);
     params=setDefaultParamValue(params,'max_iterations',20);
     params=setDefaultParamValue(params,'want_plot',1);
     params=setDefaultParamValue(params,'smooth',10);
