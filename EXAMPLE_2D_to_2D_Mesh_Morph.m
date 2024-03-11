@@ -2,7 +2,7 @@
 % Written by Thor Andreassen, PhD
 % University of Denver
 % Created 12/1/22
-% Last Edited 1/30/24
+% Last Edited 3/10/24
 
 
 % This is the main example script to create a morphing of a 2D mesh
@@ -56,11 +56,11 @@ files=dir([source_path,'*.stl']);
 [source.faces,source.nodes]=stlRead2([source_path,files(1).name]);
 % load('femur_test')
 
-%% reduce target mesh
+%% Step 1 - Create Reduced Geometries
 [target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.15);
 [source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.15);
 
-%% perform initial rigid alignment
+%% Step 2 - Rigid Alignment
 target_pts=[125.231,97.5814,482.127;...
     59.1168,44.6367,112.439;...
     112.968,65.8699,113.966];
@@ -80,10 +80,12 @@ Options.TolX=.001;
 source.nodes_orig=source.nodes;
 [source.nodes_reduce,M1]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
-
+%% Step 3 - Affine Alignment
 Options.Registration='Affine';
 [source.nodes_reduce,M2]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
+Initial_Alignment_TransMat=M0;
+Rigid_TransMat=M1*M0;
 Affine_TransMat=M2*M1*M0;
 
 source.nodes_orig_rigid_align=transformPts(M1*M0,source.nodes);
@@ -92,7 +94,7 @@ source.nodes_affine=source.nodes;
 
 
 
-%% show scaled nodes
+%% Plotting - Show the Alignment after Rigid and Affine Transformations
 figure();
 scatter3(source.nodes_orig(:,1),source.nodes_orig(:,2),source.nodes_orig(:,3),1,'g');
 hold on
@@ -101,7 +103,7 @@ scatter3(target.nodes(:,1),target.nodes(:,2),target.nodes(:,3),3,'r');
 axis equal
 axis off
 
-%% morph large f
+%% Step 4 - High Smoothing Morphing of Reduced Geometries
 params.max_iterations=10; %normally ~10
 params.want_plot=1;
 params.scale=.95;
@@ -124,7 +126,7 @@ params.smooth_decay=1;
 %
 % source.nodes_deform=FV2.vertices;
 
-%% morph small f
+%% Step 5 - Low Smoothing Morphing of Reduced Geometries
 params.max_iterations=4; %normally ~4
 params.want_plot=1;
 params.scale=.5;
@@ -141,23 +143,24 @@ params.smooth=1; % normally 1
 %
 % source.nodes_deform=FV2.vertices;
 
-%% deform original mesh
+%% Step 6 - Create initial position of dense mesh from reduce solution
 node_deform=source.nodes_deform-source.nodes_reduce;
 model_orig=newgrnn(source.nodes_reduce',node_deform',10);
 
 new_deform=sim(model_orig,source.nodes');
 source.nodes=source.nodes+new_deform';
 
-%% morph small f
+%% Step 7 - High Smoothing Morphing of Final Dense Geometries
 params.max_iterations=10; % normally 10-20
 params.want_plot=1;
-params.scale=.5;
+params.scale=.75;
 params.smooth=10; % normally 10
 params.smooth_decay=.95;
 
 [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params,target.faces,source.faces);
 % [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params);
 time_total=toc(total_time)
+
 %% smooth mesh
 % figure();
 % smooth_mesh.vertices=source.nodes;
@@ -169,17 +172,20 @@ time_total=toc(total_time)
 %
 % source.nodes=smooth_mesh.vertices;
 
-%% plot final meshes
-figure()
+%% Plotting - plot final meshes
+final_overlap_fig=figure()
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2,'FaceAlpha',.4);
 hold on
 source_geom_orig=patch('Faces',source.faces,'Vertices',source.nodes_orig,'FaceColor','g','EdgeAlpha',.2);
 source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','b','EdgeAlpha',.2,'FaceAlpha',.4);
 axis equal
+mkdir([results_path,'Images\']);
+try
+    saveas(final_overlap_fig,[results_path,'Images\','Overlap_Final_Figure.png']);
+    saveas(final_overlap_fig,[results_path,'Images\','Overlap_Final_Figure.fig']);
+end
 
-
-
-%% plot net change
+%% Plotting - plot net change
 figure();
 source_geom_orig=patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','b','EdgeAlpha',.2);
 hold on
@@ -187,7 +193,7 @@ source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes_affine,'FaceC
 % segments=createLineSegments(source.nodes_affine,source.nodes);
 % plot3(segments(:,1),segments(:,2),segments(:,3),'k','LineWidth',5);
 
-%% plot final geometreis
+%% Plotting - Plot final geometries
 figure()
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.5,'FaceAlpha',.9);
 hold on
@@ -195,19 +201,16 @@ source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor','
 axis equal
 
 
-%% determine net motion
+%% Step 8 - determine net motion for final morphing solution
 
 source.nodes_change=source.nodes-source.nodes_affine;
 source.nodes_change_affine=source.nodes_affine-source.nodes_orig_rigid_align;
 source.nodes_change_total=source.nodes-source.nodes_orig_rigid_align;
-%% final deformation model
+%% Step 9 - Train Final deformation model for morphing solution
 model_final=newgrnn(source.nodes_affine',source.nodes_change',1);
 
 
-%% animate motion
-source.nodes_orig_rigid_align
-
-
+%% Plotting - Animate overall morphing motion
 v=VideoWriter([results_path,'morph_animation.avi']);
 open(v);
 fig_anim=figure('units','normalized','outerposition',[0 0 1 1]);
@@ -257,7 +260,8 @@ new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
 mkdir([results_path,'Landmarks\']);
 writetable(new_table,[results_path,'Landmarks\',files(1).name])
 
-%% save SITE geometries
+%% Plotting/Saving - Site Geometries and Morphing Landmark/Site Figure
+
 morph_fig=figure()
 subplot(1,2,2)
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
@@ -306,12 +310,12 @@ try
     end
 end
 
-mkdir([results_path,'Images\']);
+
 try
     saveas(morph_fig,[results_path,'Images\','Morph_Figure.png']);
     saveas(morph_fig,[results_path,'Images\','Morph_Figure.fig']);
 end
-%% save morphing meshes
+%% Saving - Save Morphed Geometry and Morphing Solution Parameters
 files=dir([target_path,'*.stl']);
 target_filename=files(1).name;
 
@@ -329,9 +333,10 @@ end
 
 
 save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target',...
-    'model_final','landmark','M2','M1','M0');
+    'model_final','landmark','M2','M1','M0','Initial_Alignment_TransMat',...
+    'Rigid_TransMat');
 
-%% computer similarity metrics
+%% Plotting/Saving - Morphing Acccuracy Metrics
 
 inputs.faces=target.faces;
 inputs.nodes=target.nodes;
@@ -349,7 +354,7 @@ try
     figure()
     cdfplot(metrics.surf_distances)
     hold on
-    cdfplot(haus_distance)
+    cdfplot(metrics.haus_distance)
     legend({'Surface Project Distance','Hausdorff Distance'});
 end
 
@@ -375,9 +380,9 @@ try
     metrics.node_dist_travel_GRNN=vecnorm(source.nodes_change,2,2);
     metrics.node_dist_travel_total=vecnorm(source.nodes_change_total,2,2);
 end
-save([results_path,'Morph_Similarity.mat'],'metrics');
+save([results_path,'Morph_Similarity.mat'],'metrics','time_total');
 
-%% plot Net Accuracy of Morphing
+%% Plotting - Net Accuracy of Morphing
 
 try
     net_surf_figure=figure();
@@ -393,7 +398,7 @@ try
     saveas(net_surf_figure,[results_path,'Images\','Surf_Distance_Figure.fig']);
 end
 
-%% plot final bone position
+%% Plotting - final bone position
 figure()
 bone_color=[0.992156863212585,0.917647063732147,0.796078443527222];
 patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor',bone_color);
@@ -404,7 +409,7 @@ axis equal
 
 
 
-%% final motion figure
+%% Plotting - final motion figure
 try
     morphed_color_fig=figure();
     subplot(1,3,1);
