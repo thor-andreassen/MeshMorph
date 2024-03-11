@@ -89,7 +89,7 @@ function [source_nodes]= pointCloudMorph_v4(target_nodes,source_nodes,params,tar
             % will create a geometric series of diminishing
             % smoothing each iteration applied to the overall
             % smoothing factor.
-        % params.normal_scale_decay (0 <= x <= 1) - Default =
+        % params.normal_scale_decay (0 <= X <= 1) - Default =
         % 0.95
             % This is a parameter that will adjust the scale of the
             % normal values of the vertices, if the faces are
@@ -98,6 +98,21 @@ function [source_nodes]= pointCloudMorph_v4(target_nodes,source_nodes,params,tar
             % will create a geometric series of diminishing
             % smoothing each iteration applied to the overall
             % normal scale factor.
+        % params.memory_splits (1 <= X) - Default =1
+            % this is a parameter that allows the computation to split up
+            % the matrix for the GRNN calculation to allow the solution to
+            % complete even in the presence of very many nodes, where
+            % insufficient RAM is found. If as the code is run an error
+            % similar to the following is found:
+            %"Requested 100000x100000 (74.5GB) array exceeds maximum array
+            % size preference (63.9GB). This might cause MATLAB to become
+            % unresponsive."
+            % Then this line allows the user to split the computation into
+            % X number of splits, with a larger number splitting up the
+            % computation that many times, at the cost of that many times
+            % increase in computational time. I.E. params.memory_splits=10
+            % means 10 times less RAM is required, but the computation will
+            % take approximately 10 times as long. 
 
     % The following loop is used to determine if the face information has
     % been included and therefore the normal directions can be used for the
@@ -118,6 +133,8 @@ function [source_nodes]= pointCloudMorph_v4(target_nodes,source_nodes,params,tar
     params=setDefaultParamValue(params,'normal_scale',1);
     params=setDefaultParamValue(params,'smooth_decay',0.995);
     params=setDefaultParamValue(params,'normal_scale_decay',0.95);
+    params=setDefaultParamValue(params,'memory_splits',1);
+    
     
     
     % the following lines are used to set the vlaues for the internal
@@ -131,7 +148,7 @@ function [source_nodes]= pointCloudMorph_v4(target_nodes,source_nodes,params,tar
     normal_scale=params.normal_scale;
     smooth_decay=params.smooth_decay;
     normal_scale_decay=params.normal_scale_decay;
-    
+    memory_splits=params.memory_splits;
     
     %% mesh morphin initialization
     % the following lines initialize the counter, and set the values for
@@ -209,11 +226,28 @@ function [source_nodes]= pointCloudMorph_v4(target_nodes,source_nodes,params,tar
     
         % the following determines the displacement field vectors to apply
         % to the source nodes for the current iteration. This can be done
-        % either in parallel or individually for the original points.
-        if use_parallel==1
-            deform_vector=sim(model,source_nodes','useParallel','yes');
-        else
-            deform_vector=sim(model,source_nodes');
+        % either in parallel or individually for the original points. The
+        % index ranges are used to split the memory up so as to not full up
+        % the ram of the computer. For example, the size of the GRNN will
+        % be approximately:
+        % [# of source_nodes + # of target_nodes,# of source_nodes]
+
+        % as such, this matrix can become too large for the available
+        % memory of the computer. To combat this, the program allows for
+        % the matrix to be split into several smaller matrices of:
+        % [# of source_nodes + # of target_nodes,(# of source_nodes)/splits] 
+
+        % allowing for the computation to finish (even for small amounts of
+        % RAM) at the cost of decreased computational speed. 
+        index_ranges=createSplitsOfTotal(size(source_nodes,1),memory_splits);
+        deform_vector=zeros(size(source_nodes'));
+        for count_memory_split=1:memory_splits
+            indices_current=index_ranges(count_memory_split,:);
+            if use_parallel==1
+                deform_vector(:,indices_current(1):indices_current(2))=sim(model,source_nodes(indices_current(1):indices_current(2),:)','useParallel','yes');
+            else
+                deform_vector(:,indices_current(1):indices_current(2))=sim(model,source_nodes(indices_current(1):indices_current(2),:)');
+            end
         end
     
         % the following line is used to apply the determined displacement
