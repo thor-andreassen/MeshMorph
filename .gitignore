@@ -1,13 +1,7 @@
 
-*.mat
-*.inp
-*.fig
 
 GIBBON/
 ICP_Morph_Comparison/
-*.png
-*.fig
-*.png
 S193761_Morph_bones/
 shoulder 19/
 mesh_geometries/

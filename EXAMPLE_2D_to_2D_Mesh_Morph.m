@@ -144,7 +144,8 @@ elseif base_path(end)~='\'
 end
 
 %% Create Storage Paths
-results_path=mkdir([base_path,'Results\']);
+mkdir([base_path,'Results\']);
+results_path=[base_path,'Results\'];
 target_path=[base_path,'Target Geom\'];
 source_path=[base_path,'Source Geom\'];
 site_path=[base_path,'Site Geom\'];
