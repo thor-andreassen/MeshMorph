@@ -311,20 +311,45 @@ end
 close(v);
 
 %% load landmarks
+% the following lines are used to apply the morphing solution to a set of
+% landmarks poitns given by Cartesian X, Y, Z positions. These can
+% represent individual points, or point clouds. All files within the
+% "Landmark" folder of csv or .xlsx type will be automatically converted.
+try
+    mkdir([results_path,'Landmarks\']);
+    files=dir([landmark_path,'*.csv']);
+    landmark.orig=[];
+    landmark.deform=[];
+    for count_file=1:length(files)
+        [~,orig_landmark_filename,~]=fileparts([landmark_path,files(count_file).name]);
+        landmarks_orig=csvread([landmark_path,files(count_file).name]);
+        landmark.orig=[landmark.orig;landmarks_orig];
+        landmarks_new=applyMorphToNodes(landmarks_orig,Affine_TransMat,model_final);
+        landmark.deform=[landmark.deform;landmarks_new];
+        new_landmark_filename=[orig_landmark_filename,'_Morph.csv'];
+        csvwrite([results_path,'Landmarks\',new_landmark_filename],landmarks_new);
+    end
+end
 
 
-files=dir([landmark_path,'*.csv']);
-% landmark.orig=csvread([landmark_path,files(1).name]);
-temp_node=readtable([landmark_path,files(1).name]);
-landmark.orig=table2array(temp_node(:,2:4));
+try
 
-landmark.deform=applyMorphToNodes(landmark.orig,Affine_TransMat,model_final);
+    files=dir([landmark_path,'*.xlsx']);
+    for count_file=1:length(files)
+        temp_node=readtable([landmark_path,files(count_file).name]);
+        [~,orig_landmark_filename,~]=fileparts([landmark_path,files(count_file).name]);
+        landmarks_orig=table2array(temp_node(:,2:4));
+        landmark.orig=[landmark.orig;landmarks_orig];
+        landmarks_new=applyMorphToNodes(landmarks_orig,Affine_TransMat,model_final);
+        landmark.deform=[landmark.deform;landmarks_new];
+        new_table=temp_node;
+        new_table{:,2:4}=landmarks_new;
+        new_table=renamevars(new_table,1:width(new_table),{'Landmark','X','Y','Z'});
 
-new_table=temp_node;
-new_table{:,2:4}=landmark.deform;
-new_table=renamevars(new_table,1:width(new_table),{'landmark','x','y','z'});
-mkdir([results_path,'Landmarks\']);
-writetable(new_table,[results_path,'Landmarks\',files(1).name])
+        new_landmark_filename=[orig_landmark_filename,'_Morph.xlsx'];
+        writetable(new_table,[results_path,'Landmarks\',new_landmark_filename])
+    end
+end
 
 %% Plotting/Saving - Site Geometries and Morphing Landmark/Site Figure
 
