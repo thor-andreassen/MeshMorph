@@ -1,3 +1,12 @@
+%% Example code for #D mesh Morphing and Prediction of sites
+% Written by Thor Andreassen, PhD
+% University of Denver
+% Created 12/1/22
+% Last Edited 3/11/24
+
+% NOTE: This code is a work in progress, and future updates will include a
+% more complete and clean version for users to use as an example.
+
 %% clearing
 clear
 close all
@@ -97,7 +106,7 @@ params.smooth_decay=1;
 params.normal_scale_decay=1.0;
 params.use_parallel=1;
     
-[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
+[source.nodes_deform]= GRNNMorph(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
 
 
 %% smooth mesh
@@ -121,7 +130,7 @@ params.knots_scale=1.1;
 params.beta_scale=.99;
 params.smooth=5;
     
-[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_deform,params,target.faces_reduce,source.faces_reduce);
+[source.nodes_deform]= GRNNMorph(target.nodes_reduce,source.nodes_deform,params,target.faces_reduce,source.faces_reduce);
 
 %% smooth mesh
 figure();
@@ -165,7 +174,7 @@ params.smooth_decay=.95;
 params.normal_scale=10;
 params.normal_scale_decay=0.95;
 
-[source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params);
+[source.nodes]= GRNNMorph(target.nodes,source.nodes,params);
 
 %% smooth mesh
 figure();
@@ -283,7 +292,7 @@ b_max=max(target.nodes);
 
 %% morph inner nodes
 params.smooth=50;
-[source_3d_nodes_renumber_new]= pointCloudMorph_v4(target_tet_node,source_3d_nodes_renumber_new,params);
+[source_3d_nodes_renumber_new]= GRNNMorph(target_tet_node,source_3d_nodes_renumber_new,params);
 
 %% 3D figures
 mesh_3d_fig=figure()

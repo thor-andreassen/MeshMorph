@@ -7,7 +7,7 @@
 
 % This is the main example script to create a morphing of a 2D mesh
 % geometry to another 2D mesh geometry. The morphing function is contained
-% in the pointCloudMorph_v4 function.
+% in the GRNNMorph function.
 
 % The code will prompt the user to choose the "base folder" which contains
 % a set of pre-assumed files within a set of folder structures to allow the
@@ -238,8 +238,8 @@ axis off
 % the following line applies the morphing to the reduced source mesh with
 % the large smoothing
 
-[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params_reduce_large_smooth,target.faces_reduce,source.faces_reduce);
-% [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params);
+[source.nodes_deform]= GRNNMorph(target.nodes_reduce,source.nodes_reduce,params_reduce_large_smooth,target.faces_reduce,source.faces_reduce);
+% [source.nodes_deform]= GRNNMorph(target.nodes_reduce,source.nodes_reduce,params);
 
 %% smooth mesh (OPTIONAL)
 % % the following lines can be uncommented to include additional smoothing
@@ -259,7 +259,7 @@ axis off
 % the following line applies the morphing to the reduced source mesh with
 % the small smoothing
 
-[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_deform,params_reduce_small_smooth,target.faces_reduce,source.faces_reduce);
+[source.nodes_deform]= GRNNMorph(target.nodes_reduce,source.nodes_deform,params_reduce_small_smooth,target.faces_reduce,source.faces_reduce);
 
 %% smooth mesh (OPTIONAL)
 % % the following lines can be uncommented to include additional smoothing
@@ -285,8 +285,8 @@ source.nodes=source.nodes+new_deform';
 %% Step 7 - High Smoothing Morphing of Final Dense Geometries
 
 
-[source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params_dense,target.faces,source.faces);
-% [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params);
+[source.nodes]= GRNNMorph(target.nodes,source.nodes,params_dense,target.faces,source.faces);
+% [source.nodes]= GRNNMorph(target.nodes,source.nodes,params);
 time_total=toc(total_time)
 
 %% smooth mesh (OPTIONAL)

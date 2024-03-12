@@ -1,4 +1,4 @@
-function [source_nodes]= pointCloudMorph_v4(target_nodes,source_nodes,params,target_faces,source_faces)
+function [source_nodes]= GRNNMorph(target_nodes,source_nodes,params,target_faces,source_faces)
 %% main
 % Created by Thor E. Andreassen, PhD
 % University of Denver
