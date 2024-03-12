@@ -413,6 +413,11 @@ try
     saveas(morph_fig,[results_path,'Images\','Morph_Figure.fig']);
 end
 %% Saving - Save Morphed Geometry and Morphing Solution Parameters
+% the following save the final goemetry of the soruce mesh following
+% morphing to the target mesh. It also saves the final morphing parameters
+% which can be used to apply the morphing to any new set of geometries
+% using the affine transformation and the final GRNN model solution and the
+% function called "applyMorphToNodes.m" provided.
 files=dir([target_path,'*.stl']);
 target_filename=files(1).name;
 
