@@ -14,7 +14,9 @@
 % morphing to progress automatically.
 
 % Within the base folder, the following folders and files are assumed to be
-% included, with some being optional and some being required.
+% included, with some being optional and some being required. The folder
+% called "Example 2D Structure" has been included with example files to
+% show an exmaple of the assumed file structure contained within. 
 
 
 % Input folders:
@@ -48,14 +50,18 @@
     % two meshes. This is useful if the original source and target mesh,
     % are far away or in very different initial alignments. The folder
     % should include a single ".csv" file containing the X, Y, Z
-    % coordinates of the chosen alignment points for the source mesh.
+    % coordinates of the chosen alignment points for the source mesh. This
+    % input is optional, and can be ignored if the initial meshes are close
+    % enough and do not require additional alignment.
 % \Target Alignment\ - Optional
     % this folder contains the landmarks for that are chosen by the user to
     % represent initial points on the target mesh used for registering the
     % two meshes. This is useful if the original source and target mesh,
     % are far away or in very different initial alignments. The folder
     % should include a single ".csv" file containing the X, Y, Z
-    % coordinates of the chosen alignment points for the target mesh.
+    % coordinates of the chosen alignment points for the target mesh. This
+    % input is optional, and can be ignored if the initial meshes are close
+    % enough and do not require additional alignment.
 
 
 % Output folders:
@@ -438,8 +444,9 @@ colors=jet(length(files));
 if ~isempty(files)
     mkdir([results_path,'Site Geom\']);
 end
-try
-    for count_site=1:length(files)
+
+for count_site=1:length(files)
+    try
         [site.faces,site.nodes]=stlRead2([site_path,files(count_site).name]);
         subplot(1,2,1)
         hold on
