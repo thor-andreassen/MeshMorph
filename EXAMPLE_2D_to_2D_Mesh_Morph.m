@@ -2,15 +2,73 @@
 % Written by Thor Andreassen, PhD
 % University of Denver
 % Created 12/1/22
-% Last Edited 3/10/24
+% Last Edited 3/11/24
 
 
 % This is the main example script to create a morphing of a 2D mesh
 % geometry to another 2D mesh geometry. The morphing function is contained
 % in the pointCloudMorph_v4 function.
 
+% The code will prompt the user to choose the "base folder" which contains
+% a set of pre-assumed files within a set of folder structures to allow the
+% morphing to progress automatically.
+
+% Within the base folder, the following folders and files are assumed to be
+% included, with some being optional and some being required.
 
 
+% Input folders:
+% \Target Geom\ - Required
+    % this folder is the target mesh that the user is attempted to morph
+    % the source mesh to. The folder should contain only a single ".stl"
+    % file with the desired target mesh.
+% \Source Geom\ - Required
+    % this folder is the source mesh that the user is attempted to morph
+    % to the target mesh to. The folder should contain only a single ".stl"
+    % file with the initial soruce mesh that will be morphed to the target
+% \Site Geom\ - Optional
+    % this folder contains the "site geometries" sites/sufaces for which
+    % the final morphing will be applied to. This can be used to predict
+    % individual sites on the "target" mesh" based on their position in the
+    % original source mesh. This folder should contain individual ".stl"
+    % files for each site that is desired to be predicted.
+% \Landmarks\ - Optional
+    % this folder contains the landmarks for which
+    % the final morphing will be applied to. This can be used to predict
+    % individual landmarks on the "target" mesh" based on their position in the
+    % original source mesh. This folder should contain individual files
+    % containing various landmarks with X, Y, Z, cartesian coordinates in
+    % the original source location. The files can either bs ".csv" with no
+    % header, or ".xlsx" with an assumed header of "Landmark_Name", "X",
+    % "Y", "Z" allowing for the points to be labelled and the labelling to
+    % be kept.
+% \Source Alignment\ - Optional
+    % this folder contains the landmarks for that are chosen by the user to
+    % represent initial points on the source mesh used for registering the
+    % two meshes. This is useful if the original source and target mesh,
+    % are far away or in very different initial alignments. The folder
+    % should include a single ".csv" file containing the X, Y, Z
+    % coordinates of the chosen alignment points for the source mesh.
+% \Target Alignment\ - Optional
+    % this folder contains the landmarks for that are chosen by the user to
+    % represent initial points on the target mesh used for registering the
+    % two meshes. This is useful if the original source and target mesh,
+    % are far away or in very different initial alignments. The folder
+    % should include a single ".csv" file containing the X, Y, Z
+    % coordinates of the chosen alignment points for the target mesh.
+
+
+% Output folders:
+% \Results\
+    % this folder is where all of the results of the morphing will be put.
+    % The results will be organized into separate folders containing the
+    % "Site Geom", the final "Morphed Geometry" solution, the morphed
+    % "Landmarks" and images taken as part of the calcualtion for
+    % verification of results.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% clearing
 clear
 close all
@@ -80,7 +138,7 @@ elseif base_path(end)~='\'
 end
 
 %% Create Storage Paths
-results_path=[base_path,'Results\'];
+results_path=mkdir([base_path,'Results\']);
 target_path=[base_path,'Target Geom\'];
 source_path=[base_path,'Source Geom\'];
 site_path=[base_path,'Site Geom\'];
