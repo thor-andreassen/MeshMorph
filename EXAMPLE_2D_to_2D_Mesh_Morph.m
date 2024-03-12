@@ -11,18 +11,64 @@
 
 
 
-%%
-%
-%
-%%____________________________CODE______________________________
 %% clearing
 clear
 close all
 clc
 
-%% OVERALL PATHS
-total_time=tic;
 
+%% Parameters
+% the following lines define the overal parameters that the user can adjust
+% to change the progression of the morphing and the resulting performance.
+use_known_alignment=1;
+target_reduce_value=.15;
+source_reduce_value=.15;
+use_parallel=1;
+want_plot=1;
+
+%% Parameters for GRNN Smoothing Steps
+% these are the parameters using for the morphing of the reduced mesh using
+% the large smoothing factor. The below values can be adjusted to change
+% the performance of the algoirhtm to the individual user's needs. However,
+% the values below are a reasonable starting point for most application.
+
+params_reduce_large_smooth.max_iterations=10; %normally ~10
+params_reduce_large_smooth.want_plot=want_plot;
+params_reduce_large_smooth.scale=.95;
+params_reduce_large_smooth.smooth=10; % normally 10
+params_reduce_large_smooth.normal_scale=5;
+params_reduce_large_smooth.normal_scale_decay=.999;
+params_reduce_large_smooth.use_parallel=use_parallel;
+params_reduce_large_smooth.smooth_decay=1;
+
+% these are the parameters using for the morphing of the reduced mesh using
+% the small smoothing factor. The below values can be adjusted to change
+% the performance of the algoirhtm to the individual user's needs. However,
+% the values below are a reasonable starting point for most application.
+
+params_reduce_small_smooth.max_iterations=4; %normally ~4
+params_reduce_small_smooth.want_plot=want_plot;
+params_reduce_small_smooth.scale=.5;
+params_reduce_small_smooth.smooth=1; % normally 1
+params_reduce_small_smooth.use_parallel=use_parallel;
+
+
+% these are the parameters using for the morphing of the final dense mesh using
+% the small smoothing factor. The below values can be adjusted to change
+% the performance of the algoirhtm to the individual user's needs. However,
+% the values below are a reasonable starting point for most application.
+params_dense.max_iterations=10; % normally 10-20
+params_dense.want_plot=want_plot;
+params_dense.scale=.75;
+params_dense.smooth=10; % normally 10
+params_dense.smooth_decay=.95;
+params_dense.use_parallel=use_parallel;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% OVERALL PATHS
 default_path=[pwd,'\Example 2D Structure\'];
 base_path=uigetdir(default_path);
 
@@ -39,11 +85,8 @@ target_path=[base_path,'Target Geom\'];
 source_path=[base_path,'Source Geom\'];
 site_path=[base_path,'Site Geom\'];
 landmark_path=[base_path,'Landmarks\'];
-
-
-
-use_known_align=0;
-
+source_alignment=[base_path,'Source Alignment\'];
+target_alignment=[base_path,'Target Alignment\'];
 
 
 %% load target geometries
@@ -57,22 +100,42 @@ files=dir([source_path,'*.stl']);
 % load('femur_test')
 
 %% Step 1 - Create Reduced Geometries
-[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,.15);
-[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,.15);
+% the following records the start time of the algorithm.
+total_time=tic;
+
+% the following lines create the reduced versions of the meshes.
+[target.faces_reduce,target.nodes_reduce]=reducepatch(target.faces,target.nodes,target_reduce_value);
+[source.faces_reduce,source.nodes_reduce]=reducepatch(source.faces,source.nodes,source_reduce_value);
 
 %% Step 2 - Rigid Alignment
-target_pts=[125.231,97.5814,482.127;...
-    59.1168,44.6367,112.439;...
-    112.968,65.8699,113.966];
-source_pts=[423.979,491.863,898.497;...
-    494.608,490.195,534.043;...
-    436.441,463.113,531.81];
-if use_known_align==1
+
+% the following lines determine if a set of user define alignment landmarks
+% have been provided and load them in. 
+try
+    files=dir([source_alignment,'*.csv']);
+    source_pts=csvread([source_alignment,files(1).name]);
+
+    files=dir([target_alignment,'*.csv']);
+    target_pts=csvread([target_alignment,files(1).name]);
+catch
+    disp('No Alignment Points Found');
+    use_known_alignment=1;
+end
+
+
+% the following line determine the alignment between chosen alignment
+% points if found.
+if use_known_alignment==1
     M0=alignKnownPts(target_pts,source_pts);
     M0=rotateTransMat(M0,3);
 else
     M0=eye(4);
 end
+
+
+% The following lines apply a subsequent rigid alignment using an ICP-based
+% algorithm following the initial alignment based on user-provided
+% landmarks, if provided.
 source.nodes_reduce = transformPts(M0,source.nodes_reduce);
 Options.Registration='Rigid';
 Options.TolX=.001;
@@ -81,6 +144,10 @@ source.nodes_orig=source.nodes;
 [source.nodes_reduce,M1]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
 %% Step 3 - Affine Alignment
+% the following lines perform affine transformation of the source nodes to
+% the target nodes following the initial rigid transformation alignment.
+% This reduces the amount of deformation required by the "non-linear" GRNN
+% based morphing and improves the algorithm speed. 
 Options.Registration='Affine';
 [source.nodes_reduce,M2]=ICP_finite(target.nodes_reduce, source.nodes_reduce, Options);
 
@@ -104,20 +171,18 @@ axis equal
 axis off
 
 %% Step 4 - High Smoothing Morphing of Reduced Geometries
-params.max_iterations=10; %normally ~10
-params.want_plot=1;
-params.scale=.95;
-params.smooth=10; % normally 10
-params.normal_scale=5;
-params.normal_scale_decay=.999;
-params.use_parallel=1;
-params.smooth_decay=1;
+% the following line applies the morphing to the reduced source mesh with
+% the large smoothing
 
-[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params,target.faces_reduce,source.faces_reduce);
+[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params_reduce_large_smooth,target.faces_reduce,source.faces_reduce);
 % [source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_reduce,params);
 
+%% smooth mesh (OPTIONAL)
+% % the following lines can be uncommented to include additional smoothing
+% in the answer if the performance is creating unusually poor meshes. NOTE:
+% All validation of the original manuscript, did not include smoothing
+% between steps, and as such, is likely not necessary for most scenarios.
 
-%% smooth mesh
 % figure();
 % smooth_mesh.vertices=source.nodes_deform;
 % smooth_mesh.faces=source.faces_reduce;
@@ -127,14 +192,17 @@ params.smooth_decay=1;
 % source.nodes_deform=FV2.vertices;
 
 %% Step 5 - Low Smoothing Morphing of Reduced Geometries
-params.max_iterations=4; %normally ~4
-params.want_plot=1;
-params.scale=.5;
-params.smooth=1; % normally 1
+% the following line applies the morphing to the reduced source mesh with
+% the small smoothing
 
-[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_deform,params,target.faces_reduce,source.faces_reduce);
+[source.nodes_deform]= pointCloudMorph_v4(target.nodes_reduce,source.nodes_deform,params_reduce_small_smooth,target.faces_reduce,source.faces_reduce);
 
-%% smooth mesh
+%% smooth mesh (OPTIONAL)
+% % the following lines can be uncommented to include additional smoothing
+% in the answer if the performance is creating unusually poor meshes. NOTE:
+% All validation of the original manuscript, did not include smoothing
+% between steps, and as such, is likely not necessary for most scenarios.
+
 % figure();
 % smooth_mesh.vertices=source.nodes_deform;
 % smooth_mesh.faces=source.faces_reduce;
@@ -151,17 +219,18 @@ new_deform=sim(model_orig,source.nodes');
 source.nodes=source.nodes+new_deform';
 
 %% Step 7 - High Smoothing Morphing of Final Dense Geometries
-params.max_iterations=10; % normally 10-20
-params.want_plot=1;
-params.scale=.75;
-params.smooth=10; % normally 10
-params.smooth_decay=.95;
 
-[source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params,target.faces,source.faces);
+
+[source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params_dense,target.faces,source.faces);
 % [source.nodes]= pointCloudMorph_v4(target.nodes,source.nodes,params);
 time_total=toc(total_time)
 
-%% smooth mesh
+%% smooth mesh (OPTIONAL)
+% % the following lines can be uncommented to include additional smoothing
+% in the answer if the performance is creating unusually poor meshes. NOTE:
+% All validation of the original manuscript, did not include smoothing
+% between steps, and as such, is likely not necessary for most scenarios.
+
 % figure();
 % smooth_mesh.vertices=source.nodes;
 % smooth_mesh.faces=source.faces;
@@ -173,7 +242,7 @@ time_total=toc(total_time)
 % source.nodes=smooth_mesh.vertices;
 
 %% Plotting - plot final meshes
-final_overlap_fig=figure()
+final_overlap_fig=figure();
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor','r','EdgeAlpha',.2,'FaceAlpha',.4);
 hold on
 source_geom_orig=patch('Faces',source.faces,'Vertices',source.nodes_orig,'FaceColor','g','EdgeAlpha',.2);
@@ -187,15 +256,27 @@ end
 
 
 %% Step 8 - determine net motion for final morphing solution
+% the following lines determine the net displacement applied to the
+% original source source following the various steps. The critical one is
+% the source.nodes_change, which can be combined with the knwon affine
+% transformation to apply the solutino to any new set of points.
 
 source.nodes_change=source.nodes-source.nodes_affine;
 source.nodes_change_affine=source.nodes_affine-source.nodes_orig_rigid_align;
 source.nodes_change_total=source.nodes-source.nodes_orig_rigid_align;
 %% Step 9 - Train Final deformation model for morphing solution
+% the following is the net solution created between a set of nodes
+% following the affine transformation and the final position of the nodes.
+% These can be combined to transform any set of points to the final morphed
+% location. This is the key piece used below to automatically predict
+% surfaces and landmarks or points not part of the original geometries.
+
 model_final=newgrnn(source.nodes_affine',source.nodes_change',1);
 
 
 %% Plotting - Animate overall morphing motion
+% the following section is used to animate the resulting morphing of the
+% source mesh to the final target mesh.
 v=VideoWriter([results_path,'morph_animation.avi']);
 open(v);
 fig_anim=figure('units','normalized','outerposition',[0 0 1 1]);
@@ -208,7 +289,7 @@ source_geom_morph=patch('Faces',source.faces,'Vertices',source.nodes_orig_rigid_
 
 colorbar
 colormap jet
-caxis([0,max(col)]);
+clim([0,max(col)]);
 view([1,0,0]);
 
 axis equal
@@ -375,7 +456,7 @@ try
     c=jet(1000);
     colormap(c(125:875,:));
     colorbar
-    caxis([0,max(metrics.surf_distances)]);
+    clim([0,max(metrics.surf_distances)]);
     axis off
     view ([1,-1,1])
     axis equal
@@ -402,18 +483,18 @@ try
     c=jet(1000);
     colormap(c(125:875,:));
     colorbar
-    caxis([0,max(metrics.node_dist_travel_rig_to_aff)]);
+    clim([0,max(metrics.node_dist_travel_rig_to_aff)]);
     axis off
     view ([0,1,0])
     axis equal
     title('Bone after Affine Transformation')
 
-    subplot(1,3,3);
+    subplot(1,3,2);
     patch('Faces',source.faces,'Vertices',source.nodes,'FaceVertexCData',metrics.node_dist_travel_GRNN,'FaceColor','interp','EdgeAlpha',.3);
     c=jet(1000);
     colormap(c(125:875,:));
     colorbar
-    caxis([0,max(metrics.node_dist_travel_GRNN)]);
+    clim([0,max(metrics.node_dist_travel_GRNN)]);
     axis off
     view ([0,1,0])
     axis equal
@@ -424,7 +505,7 @@ try
     c=jet(1000);
     colormap(c(125:875,:));
     colorbar
-    caxis([0,max(metrics.node_dist_travel_total)]);
+    clim([0,max(metrics.node_dist_travel_total)]);
     axis off
     view ([0,1,0])
     axis equal
