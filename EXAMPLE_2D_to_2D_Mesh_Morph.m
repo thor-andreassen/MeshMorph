@@ -352,20 +352,26 @@ try
 end
 
 %% Plotting/Saving - Site Geometries and Morphing Landmark/Site Figure
+% the following line are used to predict the site goemetries and plot the
+% data for the landmarks and the site geometries using the previously
+% created morphing solution.
 
-morph_fig=figure()
+morph_fig=figure();
 subplot(1,2,2)
 target_geom_orig=patch('Faces',target.faces,'Vertices',target.nodes,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
 hold on
-plot3(landmark.deform(:,1),landmark.deform(:,2),landmark.deform(:,3),'kx','MarkerSize',20);
+try
+    plot3(landmark.deform(:,1),landmark.deform(:,2),landmark.deform(:,3),'kx','MarkerSize',20);
+end
 
 
 
 subplot(1,2,1)
 source_geom_fin=patch('Faces',source.faces,'Vertices',source.nodes_orig,'FaceColor',[0.3,0.3,0.3],'EdgeAlpha',0,'FaceAlpha',0.3);
 hold on
-plot3(landmark.orig(:,1),landmark.orig(:,2),landmark.orig(:,3),'kx','MarkerSize',20);
-
+try
+    plot3(landmark.orig(:,1),landmark.orig(:,2),landmark.orig(:,3),'kx','MarkerSize',20);
+end
 
 
 files=dir([site_path,'*.stl']);
@@ -428,6 +434,18 @@ save([results_path,'Morphing_Parameters.mat'],'Affine_TransMat','source','target
     'Rigid_TransMat');
 
 %% Plotting/Saving - Morphing Acccuracy Metrics
+% the following linese calculate various quality metrics, and save them.
+% These can be used to objectively evaluate the accuracy of the morphing
+% and the resulting quality of the mesh.
+% the metrics are:
+% Hausdorf Distance (Nearest Neighbor distance between source and target
+% Surface Distance (Nearest projected distance between source onto target
+% mesh
+% Dihedral Face Angle (the angle between faces along an edge)
+% Aspect Ratio (The relative aspect ratio of the resulting element)
+% Skewness (The skewness of the resulting elements)
+% Distance Traveled (The net distance traveled of a given source node from
+% its initial position at various stages of the algorithm).
 
 inputs.faces=target.faces;
 inputs.nodes=target.nodes;
@@ -474,7 +492,8 @@ end
 save([results_path,'Morph_Similarity.mat'],'metrics','time_total');
 
 %% Plotting - Net Accuracy of Morphing
-
+% The following line plot the resulting accuracy of the morphign as the
+% surface distances between the source mesh and final desired target mesh.
 try
     net_surf_figure=figure();
     patch('Faces',source.faces,'Vertices',source.nodes,'EdgeAlpha',.6,'FaceVertexCData',metrics.surf_distances,'FaceColor','interp','EdgeAlpha',.3);
@@ -489,18 +508,12 @@ try
     saveas(net_surf_figure,[results_path,'Images\','Surf_Distance_Figure.fig']);
 end
 
-%% Plotting - final bone position
-figure()
-bone_color=[0.992156863212585,0.917647063732147,0.796078443527222];
-patch('Faces',source.faces,'Vertices',source.nodes,'FaceColor',bone_color);
-axis off
-view ([1,-1,1])
-axis equal
-
 
 
 
 %% Plotting - final motion figure
+% The following line plot the distance moved by the nodes on the soruce
+% mesh after various stages of the algorithm.
 try
     morphed_color_fig=figure();
     subplot(1,3,1);
@@ -540,6 +553,9 @@ try
 end
 
 %% final motion figure
+% The following line plot the target mesh and the source and morphed
+% source meshes frollowing the affine transformation and the GRNN-based
+% morphing.
 try
     final_bone_fig=figure();
     subplot(1,3,1)
