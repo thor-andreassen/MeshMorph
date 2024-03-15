@@ -169,7 +169,7 @@ function [source_nodes]= GRNNMorph(target_nodes,source_nodes,params,target_faces
 
     %% main loop for mesh morphing
     while counter<=max_iterations
-    counter
+    disp(counter)
     % the following lines calculate the values for the target surface
     % normals, if the faces are provided, since these values do not change
     % for each iteration.
