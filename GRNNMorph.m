@@ -249,10 +249,20 @@ function [source_nodes]= GRNNMorph(target_nodes,source_nodes,params,target_faces
                 deform_vector(:,indices_current(1):indices_current(2))=sim(model,source_nodes(indices_current(1):indices_current(2),:)');
             end
         end
-    
+        
+        % the following lines are to implement the momentum term
+        if counter==1
+            previous_vector=zeros(size(deform_vector,2),size(deform_vector,1));
+            momentum=.5;
+        end
+
+
+
         % the following line is used to apply the determined displacement
         % vector field to the current source nodes.
-        source_nodes=source_nodes+scale*deform_vector';
+        source_nodes=source_nodes+scale*deform_vector'+momentum*previous_vector;
+        previous_vector=scale*deform_vector'+momentum*previous_vector;
+        momentum=momentum*0.9;
     
         % the following lines update the smoothing and the normal scale to
         % decay the values over time. This ensures that the morphing starts
