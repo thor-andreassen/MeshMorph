@@ -8,6 +8,9 @@ The full paper also includes pseudocode, additional examples, test cases, and re
 
 This code was developed with another project to make freely available geometries of the lower limbs of the Visibile Human Female and Visible Human Male. Whereby, this code was used in the final stages to remove all overclosures between adjacent geometries. This project and all geometries are available at the following: https://digitalcommons.du.edu/visiblehuman/
 
+https://github.com/user-attachments/assets/5cfa56d8-91f8-476c-a94e-361d1529652a
+
+
 The code has been implemented in MATLAB utilizing the Machine Learning Toolbox and is available free and open-source, but we ask that you cite the following two works:
 
 T. E. Andreassen, D. R. Hume, L. D. Hamilton, K. E. Walker, S. E. Higinbotham, and K. B. Shelburne, “Three Dimensional Lower Extremity Musculoskeletal Geometry of the Visible Human Female and Male”, Scientific Data, vol. 10, no. 1, p. 34, Jan. 2023, doi: 10.1038/s41597-022-01905-2.
