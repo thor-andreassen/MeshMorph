@@ -112,7 +112,16 @@ function [source_nodes]= GRNNMorph(target_nodes,source_nodes,params,target_faces
             % computation that many times, at the cost of that many times
             % increase in computational time. I.E. params.memory_splits=10
             % means 10 times less RAM is required, but the computation will
-            % take approximately 10 times as long. 
+            % take approximately 10 times as long.
+        % params.momentum (X > 0) - Default =0.5
+            % This parameter is used to apply a Polyak's momentum (Heavy
+            % ball term) to the algorithm between iterations to improve the
+            % speed by which the algorithm convergences, by using the
+            % solution of a previous iteration on the next iteration.
+        % params.momentum_decay (0 <X < 1) - Default =0.95
+            % This parameter is used to decay the heavy ball term, to help
+            % minimize any potential overshoots that may occur from using
+            % the momentum.
 
     % The following loop is used to determine if the face information has
     % been included and therefore the normal directions can be used for the
@@ -134,6 +143,8 @@ function [source_nodes]= GRNNMorph(target_nodes,source_nodes,params,target_faces
     params=setDefaultParamValue(params,'smooth_decay',0.995);
     params=setDefaultParamValue(params,'normal_scale_decay',0.95);
     params=setDefaultParamValue(params,'memory_splits',1);
+    params=setDefaultParamValue(params,'momentum',0.5);
+    params=setDefaultParamValue(params,'momentum_decay',0.95);
     
     
     
@@ -149,6 +160,8 @@ function [source_nodes]= GRNNMorph(target_nodes,source_nodes,params,target_faces
     smooth_decay=params.smooth_decay;
     normal_scale_decay=params.normal_scale_decay;
     memory_splits=params.memory_splits;
+    momentum=params.momentum;
+    momentum_decay=params.momentum_decay;
     
     %% mesh morphin initialization
     % the following lines initialize the counter, and set the values for
@@ -169,7 +182,7 @@ function [source_nodes]= GRNNMorph(target_nodes,source_nodes,params,target_faces
 
     %% main loop for mesh morphing
     while counter<=max_iterations
-    counter
+    disp(counter)
     % the following lines calculate the values for the target surface
     % normals, if the faces are provided, since these values do not change
     % for each iteration.
@@ -249,10 +262,19 @@ function [source_nodes]= GRNNMorph(target_nodes,source_nodes,params,target_faces
                 deform_vector(:,indices_current(1):indices_current(2))=sim(model,source_nodes(indices_current(1):indices_current(2),:)');
             end
         end
-    
+        
+        % the following lines are to implement the momentum term
+        if counter==1
+            previous_vector=zeros(size(deform_vector,2),size(deform_vector,1));
+        end
+
+
+
         % the following line is used to apply the determined displacement
         % vector field to the current source nodes.
-        source_nodes=source_nodes+scale*deform_vector';
+        source_nodes=source_nodes+scale*deform_vector'+momentum*previous_vector;
+        previous_vector=scale*deform_vector'+momentum*previous_vector;
+        momentum=momentum*momentum_decay;
     
         % the following lines update the smoothing and the normal scale to
         % decay the values over time. This ensures that the morphing starts
